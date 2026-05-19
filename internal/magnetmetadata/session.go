@@ -139,7 +139,7 @@ func acquireTorrent(ctx context.Context, magnetURI string) (*torrent.Torrent, er
 	case <-t.GotInfo():
 	case <-ctx.Done():
 		dropTorrent(t)
-		return nil, fmt.Errorf("metadata timeout: %w", ctx.Err())
+		return nil, fmt.Errorf("%w: %w", ErrMetadataTimeout, ctx.Err())
 	}
 
 	registerSession(ih, magnetURI, t)
