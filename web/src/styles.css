@@ -103,17 +103,11 @@ button.btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
   display: flex; justify-content: space-between; align-items: flex-start;
   gap: 1rem; margin-bottom: 1rem;
 }
-.preview-header-main { min-width: 0; flex: 1; }
-.preview-title {
-  margin: 0; font-size: 1rem; font-weight: 600; line-height: 1.35;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.preview-meta { margin: 0.2rem 0 0; font-size: 0.85rem; }
-.preview-status { margin: 0 0 0.5rem; font-size: 0.9rem; }
+.preview-header h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
 .preview-timeout { max-width: 36rem; line-height: 1.4; }
 .preview-body { overflow-y: auto; max-height: 60vh; }
-.preview-body h3 { margin: 0.75rem 0 0.35rem; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.preview-body h3 { margin: 1rem 0 0.5rem; font-size: 0.95rem; color: var(--muted); }
+.preview-summary { margin: 0 0 0.75rem; }
 .preview-files .row { align-items: flex-start; }
 .file-path { word-break: break-word; flex: 1; font-size: 0.9rem; }
 .preview-file-row { align-items: flex-start; }
