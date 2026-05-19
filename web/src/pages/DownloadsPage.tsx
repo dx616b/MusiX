@@ -8,7 +8,7 @@ export default function DownloadsPage() {
   const refresh = useCallback(async () => {
     try {
       const data = await listDownloads()
-      setRows(data.downloads)
+      setRows(data.downloads ?? [])
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load downloads')

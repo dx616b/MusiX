@@ -81,6 +81,9 @@ func (a *API) SearchTorrents(c *fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadGateway, err.Error())
 	}
+	if results == nil {
+		results = []search.Result{}
+	}
 	_ = a.Store.RecordSearch(q, toStoredResults(results))
 	return c.JSON(fiber.Map{"query": q, "results": results})
 }
@@ -202,6 +205,9 @@ func (a *API) ListDownloads(c *fiber.Ctx) error {
 	rows, err := a.Store.ListDownloads(200)
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if rows == nil {
+		rows = []store.Download{}
 	}
 	return c.JSON(fiber.Map{"downloads": rows})
 }
