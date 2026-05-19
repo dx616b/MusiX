@@ -116,9 +116,23 @@ func (a *API) TorrentPreview(c *fiber.Ctx) error {
 	}
 	preview, err := magnetmetadata.PreviewRequest(c.Context(), a.prowlarrClient(), magnet, infoHash, title)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadGateway, err.Error())
+		return magnetmetadataError(c, err)
 	}
 	return c.JSON(preview)
+}
+
+func magnetmetadataError(c *fiber.Ctx, err error) error {
+	if magnetmetadata.IsTimeout(err) {
+		return c.Status(fiber.StatusGatewayTimeout).JSON(fiber.Map{
+			"error":       "timeout",
+			"message":     "Timed out waiting for torrent metadata from the swarm",
+			"timeoutSecs": magnetmetadata.TimeoutSeconds(),
+		})
+	}
+	return c.Status(fiber.StatusBadGateway).JSON(fiber.Map{
+		"error":   "preview_failed",
+		"message": err.Error(),
+	})
 }
 
 func (a *API) ListSearches(c *fiber.Ctx) error {
