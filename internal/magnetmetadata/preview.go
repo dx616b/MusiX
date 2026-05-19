@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/anacrolix/torrent"
 	log "github.com/dx616b/musicx/internal/log"
@@ -43,6 +45,16 @@ type Preview struct {
 func Disabled() bool {
 	v := strings.ToLower(strings.TrimSpace(os.Getenv("TORRENT_MAGNET_METADATA_DISABLED")))
 	return v == "1" || v == "true" || v == "yes"
+}
+
+func timeout() time.Duration {
+	sec := 90
+	if raw := strings.TrimSpace(os.Getenv("TORRENT_MAGNET_METADATA_TIMEOUT_SECS")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			sec = n
+		}
+	}
+	return time.Duration(sec) * time.Second
 }
 
 func dataDir() string {

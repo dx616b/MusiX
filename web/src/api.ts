@@ -30,44 +30,9 @@ export interface Download {
   updatedAt: string
 }
 
-export type ApiErrorBody = {
-  error?: string
-  message?: string
-  timeoutSecs?: number
-}
-
-export class ApiError extends Error {
-  code?: string
-  timeoutSecs?: number
-
-  constructor(body: ApiErrorBody, fallback: string) {
-    super(body.message || fallback)
-    this.name = 'ApiError'
-    this.code = body.error
-    this.timeoutSecs = body.timeoutSecs
-  }
-
-  get isTimeout() {
-    return this.code === 'timeout'
-  }
-}
-
-async function readApiError(res: Response): Promise<ApiError> {
-  const text = await res.text()
-  try {
-    const body = JSON.parse(text) as ApiErrorBody
-    if (body.error || body.message) {
-      return new ApiError(body, text || res.statusText)
-    }
-  } catch {
-    /* plain text */
-  }
-  return new ApiError({ message: text }, text || res.statusText)
-}
-
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(path)
-  if (!res.ok) throw await readApiError(res)
+  if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
 
@@ -77,12 +42,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw await readApiError(res)
+  if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
-
-/** Default torrent metadata timeout (seconds); matches server unless TORRENT_MAGNET_METADATA_TIMEOUT_SECS is set. */
-export const PREVIEW_METADATA_TIMEOUT_SECS = 90
 
 export function search(q: string) {
   return get<{ query: string; results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`)

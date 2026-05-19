@@ -1,13 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  ApiError,
-  formatBytes,
-  PREVIEW_METADATA_TIMEOUT_SECS,
-  previewTorrent,
-  torrentStreamUrl,
-  type SearchResult,
-  type TorrentPreview,
-} from '../api'
+import { formatBytes, previewTorrent, torrentStreamUrl, type SearchResult, type TorrentPreview } from '../api'
 import { usePlayer } from '../player/PlayerContext'
 
 type Props = {
@@ -61,23 +53,16 @@ function FileRow({
   )
 }
 
-function displayTitle(preview: TorrentPreview | null, fallback: string) {
-  const name = (preview?.name || fallback).trim()
-  return name.length > 120 ? `${name.slice(0, 117)}…` : name
-}
-
-export default function TorrentPreviewPanel({ result, query: _query, onClose }: Props) {
-  const { play, toggle, isActive, playing } = usePlayer()
+export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
+  const { play, toggle, isActive, playing, track } = usePlayer()
   const [preview, setPreview] = useState<TorrentPreview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    setTimedOut(false)
     void previewTorrent({
       magnet: result.magnetUri,
       infoHash: result.infoHash,
@@ -89,13 +74,6 @@ export default function TorrentPreviewPanel({ result, query: _query, onClose }: 
       })
       .catch((err) => {
         if (!cancelled) {
-          if (err instanceof ApiError && err.isTimeout) {
-            const secs = err.timeoutSecs ?? PREVIEW_METADATA_TIMEOUT_SECS
-            setTimedOut(true)
-            setError(`Timed out after ${secs}s — no metadata from the swarm. Try again or queue the download.`)
-            return
-          }
-          setTimedOut(false)
           setError(err instanceof Error ? err.message : 'Preview failed')
         }
       })
@@ -133,13 +111,12 @@ export default function TorrentPreviewPanel({ result, query: _query, onClose }: 
     <div className="preview-overlay" role="dialog" aria-modal="true">
       <div className="preview-panel card">
         <div className="preview-header">
-          <div className="preview-header-main">
-            <h2 className="preview-title">{displayTitle(preview, result.title)}</h2>
-            {preview && (
-              <p className="muted preview-meta">
-                {preview.fileCount} file{preview.fileCount === 1 ? '' : 's'} · {formatBytes(preview.totalSize)}
-                {preview.truncated ? ' · truncated' : ''}
-              </p>
+          <div>
+            <h2>Torrent preview</h2>
+            <p className="muted">{result.title}</p>
+            {query && <p className="muted">Search: {query}</p>}
+            {track && (
+              <p className="muted play-hint">Playback continues in the bar below when you close this or switch tabs.</p>
             )}
           </div>
           <button type="button" className="btn-link" onClick={onClose}>
@@ -147,20 +124,20 @@ export default function TorrentPreviewPanel({ result, query: _query, onClose }: 
           </button>
         </div>
 
-        {loading && (
-          <p className="muted preview-status">Fetching files… (up to {PREVIEW_METADATA_TIMEOUT_SECS}s)</p>
-        )}
-        {error && (
-          <p className={timedOut ? 'error preview-status preview-timeout' : 'error preview-status'}>
-            {error}
-          </p>
-        )}
+        {loading && <p className="muted">Fetching metadata from swarm (may take up to a minute)…</p>}
+        {error && <p className="error">{error}</p>}
 
         {preview && (
           <div className="preview-body">
+            <p className="muted preview-summary">
+              {preview.name} · {preview.fileCount} file{preview.fileCount === 1 ? '' : 's'} ·{' '}
+              {formatBytes(preview.totalSize)}
+              {preview.truncated ? ' (list truncated)' : ''}
+            </p>
+            <p className="muted play-hint">Play streams from the swarm; buffering may take a moment.</p>
             {audioFiles.length > 0 && (
               <>
-                <h3>Audio</h3>
+                <h3>Audio ({audioFiles.length})</h3>
                 <ul className="list preview-files">
                   {audioFiles.map((f) => {
                     const streamSrc = torrentStreamUrl({ ...streamOpts, path: f.path })
@@ -181,7 +158,7 @@ export default function TorrentPreviewPanel({ result, query: _query, onClose }: 
             )}
             {otherFiles.length > 0 && (
               <>
-                <h3>Other</h3>
+                <h3>Other ({otherFiles.length})</h3>
                 <ul className="list preview-files">
                   {otherFiles.map((f) => (
                     <li key={f.path} className="row">
