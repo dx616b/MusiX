@@ -21,6 +21,13 @@ Open **http://localhost:8080**
 
 Pre-built image: `docker pull dx616b/musix:latest`
 
+If logs show `unable to open database file` for `/app/data/musicx.db`, fix data volume ownership then restart:
+
+```bash
+docker compose run --rm --user root --entrypoint sh musix -c "chown -R musix:musix /app/data /app/downloads"
+docker compose up -d --build
+```
+
 ### All-in-one (optional)
 
 Runs MusiX plus local Prowlarr, Jackett, and Transmission:

@@ -18,15 +18,17 @@ COPY --from=web /web/dist ./web/dist
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /musix ./cmd/server
 
 FROM alpine:3.20
-RUN apk add --no-cache ca-certificates tzdata \
+RUN apk add --no-cache ca-certificates tzdata su-exec \
   && adduser -D -u 1000 musix
 WORKDIR /app
 COPY --from=build /musix .
 COPY --from=web /web/dist ./web/dist
 COPY config/config.docker.yaml.example ./config/config.yaml
-RUN mkdir -p /app/data /app/downloads \
+COPY scripts/docker-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh \
+  && mkdir -p /app/data /app/downloads \
   && chown -R musix:musix /app
-USER musix
 EXPOSE 8080
 ENV CONFIG_FILE=/app/config/config.yaml
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./musix"]
