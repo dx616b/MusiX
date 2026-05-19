@@ -1,81 +1,62 @@
 # MusiX
 
-Music torrent acquisition: search **Prowlarr** and **Jackett**, queue downloads in **Transmission**, track jobs in **SQLite**. No Postgres. No Navidrome integration — point Navidrome at Transmission’s download folder yourself.
+Search music torrents with **Prowlarr** and **Jackett**, queue downloads in **Transmission**, and track jobs in **SQLite**.
 
-**Repository:** [github.com/dx616b/MusiX](https://github.com/dx616b/MusiX)
+## Run with Docker
 
 ```bash
 git clone git@github.com:dx616b/MusiX.git
 cd MusiX
-```
 
-## Stack
-
-| Component | Role |
-|-----------|------|
-| MusiX (Go + React) | Search UI, download queue, SQLite job history |
-| Prowlarr / Jackett | Music indexer search |
-| Transmission | Downloads to disk |
-| Navidrome (your setup) | Scans the download directory independently |
-
-## Quick start (local)
-
-```bash
-cp config/config.yaml.example config/config.yaml
-# Set Prowlarr, Jackett, and Transmission URLs/keys (or use Settings in the UI)
-
-go run ./cmd/server
-
-cd web && npm install && npm run dev
-```
-
-- API: http://localhost:8080  
-- UI (dev): http://localhost:5175  
-
-## Config
-
-See `config/config.yaml.example`. You can also edit Prowlarr, Jackett, and Transmission from the **Settings** page in the UI; saves go to `data/settings.yaml` (or `SETTINGS_FILE`) and apply without restart.
-
-Environment overrides (applied after the YAML files): `PROWLARR_URL`, `PROWLARR_API_KEY`, `JACKETT_URL`, `JACKETT_API_KEY`, `TRANSMISSION_URL`, `TRANSMISSION_USER`, `TRANSMISSION_PASS`, `MUSIX_SQLITE` (or legacy `MUSICX_SQLITE`), `SETTINGS_FILE`.
-
-Each indexer `url` must use the **apiKey** from that same host.
-
-## CI
-
-Pull requests run [GitHub Actions](.github/workflows/ci.yml): Go lint/test/build (`CGO_ENABLED=0`), web `npm ci` + build, and Dockerfile Hadolint. Merges to `main` also run [docker-publish](.github/workflows/docker-publish.yml) (`dx616b/musix` on Docker Hub; requires `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` repo secrets).
-
-## Docker
-
-### Docker (external Prowlarr / Jackett / Transmission)
-
-```bash
 cp config/config.docker.yaml.example config/config.docker.yaml
-# Edit URLs and API keys for your indexers and Transmission
-cp .env.example .env   # optional: override secrets only
+```
 
+Edit `config/config.docker.yaml` with your Prowlarr, Jackett, and Transmission URLs and API keys (or set them later under **Settings** in the app).
+
+```bash
 docker compose up --build -d
 ```
 
-App: http://localhost:8080
+Open **http://localhost:8080**
 
-### Standalone (bundled Prowlarr + Jackett + Transmission)
+Pre-built image: `docker pull dx616b/musix:latest`
+
+### All-in-one (optional)
+
+Runs MusiX plus local Prowlarr, Jackett, and Transmission:
 
 ```bash
 cp config/config.bundled.yaml.example config/config.docker.yaml
 docker compose -f docker-compose.yml -f docker-compose.bundled.yml up --build -d
 ```
 
-Mount `./downloads` to the same path Navidrome scans.
+Set API keys from the Prowlarr/Jackett UIs on ports 9696 and 9117, or via `.env` (see `.env.example`).
 
-## API
+## Run locally
 
-- `GET /api/search?q=artist+album`
-- `GET /api/searches` — recent search history (`?limit=50`, optional `?includeResults=true`)
-- `GET /api/searches?q=artist` — one saved search with stored results
-- `GET /api/downloads`
-- `POST /api/downloads` `{ "title", "magnet", "query?", "infoHash?", "indexer?" }`
-- `GET /api/health`
-- `GET /api/torrent/preview?magnet=…&title=…` — file list via anacrolix DHT/metadata (optional `infoHash`)
-- `GET /api/torrent/stream?path=…&magnet=…` — stream one file (HTTP Range, for in-browser play)
+```bash
+cp config/config.yaml.example config/config.yaml
+# Edit Prowlarr, Jackett, and Transmission
 
-Env: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to turn off.
+cd web && npm install && npm run build && cd ..
+
+CGO_ENABLED=0 go run ./cmd/server
+```
+
+Open **http://localhost:8080**
+
+## Configuration
+
+| Where | Purpose |
+|-------|---------|
+| `config/config.yaml` | Base config (local) |
+| `config/config.docker.yaml` | Base config (Docker, gitignored) |
+| **Settings** in the UI | Overrides saved to `data/settings.yaml` |
+
+Optional env vars (override YAML): `PROWLARR_URL`, `PROWLARR_API_KEY`, `JACKETT_URL`, `JACKETT_API_KEY`, `TRANSMISSION_URL`, `TRANSMISSION_USER`, `TRANSMISSION_PASS`, `MUSIX_SQLITE`, `SETTINGS_FILE`.
+
+Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to disable.
+
+## Releases
+
+Version in [`VERSION.txt`](VERSION.txt). Images on Docker Hub: `dx616b/musix:<version>` and `:latest`.

@@ -17,5 +17,3 @@ transmission:
 
 store:
   sqlitePath: "data/musicx.db"
-
-# Point Transmission's download directory at a folder Navidrome scans separately.

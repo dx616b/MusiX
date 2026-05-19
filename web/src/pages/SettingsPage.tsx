@@ -170,7 +170,6 @@ export default function SettingsPage() {
 
           <p className="muted settings-hint">
             At least one of Prowlarr or Jackett must be configured. Leave API key / password blank to keep the existing value.
-            Point Transmission’s download directory at a folder Navidrome scans separately.
           </p>
 
           <button type="submit" disabled={saving}>
