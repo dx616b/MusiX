@@ -61,8 +61,13 @@ function FileRow({
   )
 }
 
-export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
-  const { play, toggle, isActive, playing, track } = usePlayer()
+function displayTitle(preview: TorrentPreview | null, fallback: string) {
+  const name = (preview?.name || fallback).trim()
+  return name.length > 120 ? `${name.slice(0, 117)}…` : name
+}
+
+export default function TorrentPreviewPanel({ result, query: _query, onClose }: Props) {
+  const { play, toggle, isActive, playing } = usePlayer()
   const [preview, setPreview] = useState<TorrentPreview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -128,12 +133,13 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
     <div className="preview-overlay" role="dialog" aria-modal="true">
       <div className="preview-panel card">
         <div className="preview-header">
-          <div>
-            <h2>Torrent preview</h2>
-            <p className="muted">{result.title}</p>
-            {query && <p className="muted">Search: {query}</p>}
-            {track && (
-              <p className="muted play-hint">Playback continues in the bar below when you close this or switch tabs.</p>
+          <div className="preview-header-main">
+            <h2 className="preview-title">{displayTitle(preview, result.title)}</h2>
+            {preview && (
+              <p className="muted preview-meta">
+                {preview.fileCount} file{preview.fileCount === 1 ? '' : 's'} · {formatBytes(preview.totalSize)}
+                {preview.truncated ? ' · truncated' : ''}
+              </p>
             )}
           </div>
           <button type="button" className="btn-link" onClick={onClose}>
@@ -142,23 +148,19 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
         </div>
 
         {loading && (
-          <p className="muted">Fetching files… (up to {PREVIEW_METADATA_TIMEOUT_SECS}s)</p>
+          <p className="muted preview-status">Fetching files… (up to {PREVIEW_METADATA_TIMEOUT_SECS}s)</p>
         )}
         {error && (
-          <p className={timedOut ? 'error preview-timeout' : 'error'}>{error}</p>
+          <p className={timedOut ? 'error preview-status preview-timeout' : 'error preview-status'}>
+            {error}
+          </p>
         )}
 
         {preview && (
           <div className="preview-body">
-            <p className="muted preview-summary">
-              {preview.name} · {preview.fileCount} file{preview.fileCount === 1 ? '' : 's'} ·{' '}
-              {formatBytes(preview.totalSize)}
-              {preview.truncated ? ' (list truncated)' : ''}
-            </p>
-            <p className="muted play-hint">Play streams from the swarm; buffering may take a moment.</p>
             {audioFiles.length > 0 && (
               <>
-                <h3>Audio ({audioFiles.length})</h3>
+                <h3>Audio</h3>
                 <ul className="list preview-files">
                   {audioFiles.map((f) => {
                     const streamSrc = torrentStreamUrl({ ...streamOpts, path: f.path })
@@ -179,7 +181,7 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
             )}
             {otherFiles.length > 0 && (
               <>
-                <h3>Other ({otherFiles.length})</h3>
+                <h3>Other</h3>
                 <ul className="list preview-files">
                   {otherFiles.map((f) => (
                     <li key={f.path} className="row">
