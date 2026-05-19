@@ -27,7 +27,7 @@ export default function SearchPage() {
   const loadHistory = useCallback(async () => {
     try {
       const data = await listSearches(12)
-      setHistory(data.searches)
+      setHistory(data.searches ?? [])
     } catch {
       /* optional sidebar */
     }
@@ -53,7 +53,7 @@ export default function SearchPage() {
     setError(null)
     try {
       const data = await search(trimmed)
-      setResults(data.results)
+      setResults(data.results ?? [])
       await loadHistory()
     } catch (err) {
       setResults([])

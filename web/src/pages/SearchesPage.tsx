@@ -28,7 +28,7 @@ export default function SearchesPage() {
   const refresh = useCallback(async () => {
     try {
       const data = await listSearches(100)
-      setRows(data.searches)
+      setRows(data.searches ?? [])
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load searches')
