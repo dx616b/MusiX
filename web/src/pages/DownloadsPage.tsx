@@ -25,7 +25,7 @@ export default function DownloadsPage() {
     <div className="page">
       <h1>Downloads</h1>
       <p className="muted">
-        Files land in Transmission&apos;s download folder. Point Navidrome at that path to build your library.
+        Files are saved to Transmission&apos;s configured download directory.
       </p>
       {error && <p className="error">{error}</p>}
       <ul className="list">
