@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { formatBytes, previewTorrent, torrentStreamUrl, type SearchResult, type TorrentPreview } from '../api'
+import {
+  ApiError,
+  formatBytes,
+  PREVIEW_METADATA_TIMEOUT_SECS,
+  previewTorrent,
+  torrentStreamUrl,
+  type SearchResult,
+  type TorrentPreview,
+} from '../api'
 import { usePlayer } from '../player/PlayerContext'
 
 type Props = {
@@ -58,11 +66,13 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
   const [preview, setPreview] = useState<TorrentPreview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setTimedOut(false)
     void previewTorrent({
       magnet: result.magnetUri,
       infoHash: result.infoHash,
@@ -74,6 +84,13 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
       })
       .catch((err) => {
         if (!cancelled) {
+          if (err instanceof ApiError && err.isTimeout) {
+            const secs = err.timeoutSecs ?? PREVIEW_METADATA_TIMEOUT_SECS
+            setTimedOut(true)
+            setError(`Timed out after ${secs}s — no metadata from the swarm. Try again or queue the download.`)
+            return
+          }
+          setTimedOut(false)
           setError(err instanceof Error ? err.message : 'Preview failed')
         }
       })
@@ -124,8 +141,12 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
           </button>
         </div>
 
-        {loading && <p className="muted">Fetching metadata from swarm (may take up to a minute)…</p>}
-        {error && <p className="error">{error}</p>}
+        {loading && (
+          <p className="muted">Fetching files… (up to {PREVIEW_METADATA_TIMEOUT_SECS}s)</p>
+        )}
+        {error && (
+          <p className={timedOut ? 'error preview-timeout' : 'error'}>{error}</p>
+        )}
 
         {preview && (
           <div className="preview-body">
