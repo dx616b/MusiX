@@ -1,0 +1,21 @@
+# Copy to config.docker.yaml for Docker (gitignored).
+# Default layout matches the sibling StreamX stack (../streamx): shared Prowlarr, Jackett, Transmission.
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+prowlarr:
+  url: "https://prowlarr.electron.al"
+  apiKey: "YOUR_PROWLARR_API_KEY"
+
+jackett:
+  url: "http://streamx.router.al:9117"
+  apiKey: "YOUR_JACKETT_API_KEY"
+
+transmission:
+  url: "https://transmission.electron.al/transmission/rpc"
+  username: "YOUR_TRANSMISSION_USER"
+  password: "YOUR_TRANSMISSION_PASSWORD"
+
+store:
+  sqlitePath: "/app/data/musicx.db"

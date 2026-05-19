@@ -1,0 +1,4 @@
+# https://github.com/hadolint/hadolint#configure
+ignored:
+  - DL3018
+  - DL3059

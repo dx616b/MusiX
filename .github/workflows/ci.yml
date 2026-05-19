@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    name: Path filter
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      web: ${{ steps.filter.outputs.web }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'VERSION.txt'
+              - '.github/workflows/ci.yml'
+              - '.golangci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            docker:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - '.github/workflows/ci.yml'
+              - '.hadolint.yaml'
+
+  go:
+    name: Go
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4
+          args: --timeout=10m ./internal/... ./cmd/...
+          only-new-issues: ${{ github.event_name == 'pull_request' }}
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build ./...
+
+  web:
+    name: Web UI
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  docker-lint:
+    name: Dockerfile (Hadolint)
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: Dockerfile
+          config: .hadolint.yaml
+
+  ci-summary:
+    name: CI
+    needs: [changes, go, web, docker-lint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful jobs when paths matched
+        env:
+          CH_GO: ${{ needs.changes.outputs.go }}
+          CH_WEB: ${{ needs.changes.outputs.web }}
+          CH_DOCKER: ${{ needs.changes.outputs.docker }}
+          R_GO: ${{ needs.go.result }}
+          R_WEB: ${{ needs.web.result }}
+          R_DOCKER: ${{ needs.docker-lint.result }}
+        run: |
+          fail=0
+          if [ "$CH_GO" = "true" ] && [ "$R_GO" != "success" ]; then echo "::error::Go job result: $R_GO"; fail=1; fi
+          if [ "$CH_WEB" = "true" ] && [ "$R_WEB" != "success" ]; then echo "::error::Web UI job result: $R_WEB"; fail=1; fi
+          if [ "$CH_DOCKER" = "true" ] && [ "$R_DOCKER" != "success" ]; then echo "::error::Dockerfile lint job result: $R_DOCKER"; fail=1; fi
+          exit $fail

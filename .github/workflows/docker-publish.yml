@@ -1,0 +1,47 @@
+name: Docker build and push
+
+# CI runs on PRs; merges to main build and push the image.
+# Tags: dx616b/musix:<VERSION.txt> and :latest
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: docker-publish-${{ github.sha }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: dx616b/musix
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version from VERSION.txt
+        id: ver
+        run: echo "version=$(tr -d '[:space:]' < VERSION.txt)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

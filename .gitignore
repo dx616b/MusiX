@@ -1,0 +1,12 @@
+/bin/
+/dist/
+/web/dist/
+/data/
+/data/magnet-metadata/
+/downloads/
+*.local.yaml
+config/config.yaml
+config/config.docker.yaml
+.env
+.DS_Store
+node_modules/

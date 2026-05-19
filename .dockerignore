@@ -1,0 +1,13 @@
+.git
+.gitignore
+data/
+downloads/
+config/config.yaml
+.env
+.env.local
+**/.env
+web/node_modules
+web/dist
+**/node_modules
+*.md
+.DS_Store

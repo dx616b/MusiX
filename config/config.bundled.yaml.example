@@ -1,0 +1,21 @@
+# All-in-one Compose (docker compose -f docker-compose.yml -f docker-compose.bundled.yml up).
+# API keys: Prowlarr/Jackett UIs on :9696 / :9117, or .env overrides.
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+prowlarr:
+  url: "http://prowlarr:9696"
+  apiKey: "YOUR_PROWLARR_API_KEY"
+
+jackett:
+  url: "http://jackett:9117"
+  apiKey: "YOUR_JACKETT_API_KEY"
+
+transmission:
+  url: "http://transmission:9091/transmission/rpc"
+  username: ""
+  password: ""
+
+store:
+  sqlitePath: "/app/data/musicx.db"

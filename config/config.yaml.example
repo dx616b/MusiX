@@ -1,0 +1,21 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+prowlarr:
+  url: "http://127.0.0.1:9696"
+  apiKey: "your-prowlarr-api-key"
+
+jackett:
+  url: "http://127.0.0.1:9117"
+  apiKey: "your-jackett-api-key"
+
+transmission:
+  url: "http://127.0.0.1:9091/transmission/rpc"
+  username: ""
+  password: ""
+
+store:
+  sqlitePath: "data/musicx.db"
+
+# Point Transmission's download directory at a folder Navidrome scans separately.
