@@ -162,8 +162,8 @@ func firstJSONKey(m map[string]json.RawMessage, keys ...string) json.RawMessage 
 	return nil
 }
 
-// recordJackettUpstreamFromTorrents emits streamx_indexer_upstream_* and indexer_query_torrents when JSON indexers[]
-// is missing or unparseable, using per-row tracker names (same as Stremio path).
+// recordJackettUpstreamFromTorrents records per-indexer result counts when JSON indexers[]
+// is missing or unparseable, using per-row tracker names from the Torznab response.
 func (j *Jackett) recordJackettUpstreamFromTorrents(torrents []*prowlarr.Torrent, contentType string, elapsedSec float64) {
 	if j == nil || len(torrents) == 0 {
 		return

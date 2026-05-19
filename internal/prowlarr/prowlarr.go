@@ -508,10 +508,10 @@ func (j *Prowlarr) FetchInfoHash(torrent *Torrent) (*Torrent, error) {
 
 	// Note: When we only have a magnet link (not a torrent file), we can't determine
 	// the video file index without downloading the torrent metadata. VideoFileIndex
-	// will remain unset, and stremio will need to auto-detect the correct file.
+	// will remain unset until manifest metadata is available.
 	// This is expected behavior for magnet links.
 	if torrent.Files > 1 && torrent.VideoFileIndex < 0 {
-		log.Debugf("Prowlarr.FetchInfoHash: Multi-file torrent '%s' (Files=%d) - VideoFileIndex unknown (magnet link only, stremio will auto-detect)", torrent.Title, torrent.Files)
+		log.Debugf("Prowlarr.FetchInfoHash: Multi-file torrent '%s' (Files=%d) - VideoFileIndex unknown (magnet link only)", torrent.Title, torrent.Files)
 	}
 
 	log.Debugf("Prowlarr.FetchInfoHash: Successfully fetched InfoHash for '%s': %s", torrent.Title, torrent.InfoHash)
@@ -579,7 +579,7 @@ func (j *Prowlarr) FetchTorrentManifestIfNeeded(torrent *Torrent) (*Torrent, err
 	if !strings.HasPrefix(lower, "http://") && !strings.HasPrefix(lower, "https://") {
 		return torrent, nil
 	}
-	// Single-file torrents: avoid an extra round trip; Stremio uses fileIdx 0.
+	// Single-file torrents: avoid an extra round trip; index 0 is the only file.
 	if torrent.Files == 1 {
 		if torrent.VideoFileIndex < 0 {
 			torrent.VideoFileIndex = 0

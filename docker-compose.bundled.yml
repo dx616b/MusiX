@@ -1,4 +1,4 @@
-# Optional local Prowlarr + Jackett + Transmission (no ../streamx required).
+# Optional bundled Prowlarr + Jackett + Transmission for local all-in-one runs.
 # Usage:
 #   cp config/config.bundled.yaml.example config/config.docker.yaml
 #   docker compose -f docker-compose.yml -f docker-compose.bundled.yml up --build -d
