@@ -41,7 +41,7 @@ type Torrent struct {
 	Files          uint     `json:"files"`
 	VideoFileIndex int      `json:"videoFileIndex,omitempty"` // Index of the main video file in multi-file torrents
 	// FilePaths lists each file path inside the torrent in index order (populated when a .torrent is fetched).
-	// Used by the addon to pick Stremio fileIdx for a requested episode in season packs.
+	// Used when picking a primary file inside multi-file torrents.
 	FilePaths []string `json:"filePaths,omitempty"`
 	IndexerId      int      `json:"indexerId"`                // Prowlarr includes indexer ID
 	IndexerName    string   `json:"indexer"`                  // Prowlarr includes indexer name

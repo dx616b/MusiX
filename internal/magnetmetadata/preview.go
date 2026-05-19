@@ -110,7 +110,7 @@ func dropTorrent(t *torrent.Torrent) {
 	t.Drop()
 }
 
-// PreviewMagnet fetches file list and sizes from the swarm (same approach as StreamX torrent_magnet_metadata).
+// PreviewMagnet fetches file list and sizes from the swarm via DHT/metadata.
 func PreviewMagnet(ctx context.Context, magnetURI string) (*Preview, error) {
 	if Disabled() {
 		return nil, fmt.Errorf("torrent magnet metadata is disabled")

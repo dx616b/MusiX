@@ -22,7 +22,7 @@ cd MusiX
 
 ```bash
 cp config/config.yaml.example config/config.yaml
-# Match StreamX-style URLs/keys, or local :9696 / :9117 / :9091
+# Set Prowlarr, Jackett, and Transmission URLs/keys (or use Settings in the UI)
 
 go run ./cmd/server
 
