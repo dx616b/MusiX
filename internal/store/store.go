@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,12 +52,13 @@ func Open(path string) (*Store, error) {
 	if path == "" {
 		path = "data/musicx.db"
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil, err
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return nil, fmt.Errorf("create database directory %s: %w", dir, err)
 	}
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open database %s: %w", path, err)
 	}
 	db.SetMaxOpenConns(1)
 	s := &Store{db: db}
