@@ -129,11 +129,7 @@ button.btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
 }
 .settings-hint { margin: 0 0 1rem; font-size: 0.85rem; }
 
-.app.has-player .main { padding-bottom: 5.5rem; }
-
-.player-audio-hidden {
-  position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none;
-}
+.app.has-player .main { padding-bottom: 7.5rem; }
 
 .now-playing-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
@@ -143,7 +139,14 @@ button.btn-secondary:hover:not(:disabled) { border-color: var(--accent); }
 }
 .now-playing-inner {
   max-width: 900px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+.now-playing-top {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.now-playing-audio {
+  width: 100%;
+  height: 2.5rem;
 }
 .now-playing-meta {
   display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; flex: 1;

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react'
 
 export type NowPlayingTrack = {
@@ -17,6 +18,7 @@ export type NowPlayingTrack = {
 type PlayerContextValue = {
   track: NowPlayingTrack | null
   playing: boolean
+  audioRef: RefObject<HTMLAudioElement>
   play: (track: NowPlayingTrack) => void
   toggle: () => void
   stop: () => void
@@ -85,9 +87,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [track])
 
   return (
-    <PlayerContext.Provider value={{ track, playing, play, toggle, stop, isActive }}>
+    <PlayerContext.Provider value={{ track, playing, audioRef, play, toggle, stop, isActive }}>
       {children}
-      <audio ref={audioRef} preload="metadata" className="player-audio-hidden" />
     </PlayerContext.Provider>
   )
 }
