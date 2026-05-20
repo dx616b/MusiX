@@ -5,10 +5,13 @@
 #   # edit config.preview.yaml (optional: point at test indexers)
 #   docker compose -f docker-compose.preview.yml up -d
 #
-# Image: dx616b/musix:nightly (daily) or :edge (every main merge)
+# Images (preview only — do not use on prod):
+#   dx616b/musix:edge              — latest green main
+#   dx616b/musix:nightly           — daily snapshot
+#   dx616b/musix:sha-<7-char-git>  — immutable commit build
 services:
   musix-preview:
-    image: dx616b/musix:nightly
+    image: dx616b/musix:edge
     ports:
       - "8081:8080"
     environment:

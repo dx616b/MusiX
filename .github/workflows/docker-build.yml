@@ -1,0 +1,76 @@
+# Reusable image build (OCI tags + digest). Called by edge / nightly / release workflows.
+name: Docker build
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to build (empty = caller default checkout)
+        type: string
+        default: ''
+      metadata_tags:
+        description: docker/metadata-action tag rules (multiline)
+        type: string
+        required: true
+    outputs:
+      digest:
+        description: Image digest (pin prod with image@digest)
+        value: ${{ jobs.build.outputs.digest }}
+      tags:
+        description: Tags applied to the image
+        value: ${{ jobs.build.outputs.tags }}
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: dx616b/musix
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: ${{ inputs.metadata_tags }}
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        id: build
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Build summary
+        run: |
+          {
+            echo "### Image"
+            echo "\`${{ env.IMAGE }}@${{ steps.build.outputs.digest }}\`"
+            echo ""
+            echo "### Tags"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

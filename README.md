@@ -66,30 +66,45 @@ Optional env vars (override YAML): `PROWLARR_URL`, `PROWLARR_API_KEY`, `JACKETT_
 
 Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to disable. Session RAM: `TORRENT_SESSION_MAX` (default 2, evicts oldest idle first), `TORRENT_SESSION_LEAK_TTL_MINUTES` (default 5).
 
-## Release channels
+## Release channels (modern DevOps)
 
-| Tag | When | Use |
-|-----|------|-----|
-| `0.2.1`, … | Git tag `v0.2.1` on `main` | **Production** — pin this in compose |
-| `latest` | Same as last release tag | Convenience only; do not auto-deploy prod |
-| `edge`, `sha-<git>` | Every push to `main` | Immediate preview |
-| `nightly`, `nightly-YYYY-MM-DD` | Daily 03:00 UTC on `main` | Stable preview without prod churn |
+Trunk-based flow: merge to `main` → **CI** → **edge** image only if CI is green. Production uses **immutable** release tags; preview uses **moving** or **SHA** tags.
 
-Prod stays untouched until you change the pinned image tag in your compose file.
+| Tag | Mutable? | When | Use |
+|-----|----------|------|-----|
+| `0.2.1`, … | No (semver) | Git tag `v0.2.1` | **Production** — pin in compose |
+| `latest` | Yes | Last `v*` release only | Convenience; not “current main” |
+| `edge` | Yes | After CI passes on `main` | Bleeding-edge preview |
+| `sha-<git>` | No | Every edge/nightly/release build | Exact commit artifact (debug / rollback) |
+| `nightly`, `nightly-YYYY-MM-DD` | Yes / dated | Daily 03:00 UTC on `main` | Calm preview |
+
+**Why `sha-*`?** In modern supply chains, moving tags (`edge`, `latest`) are aliases; `sha-abc1234` is the immutable OCI artifact for one build. Pin prod with semver or `image@sha256:…` (digest printed in the GitHub Actions job summary).
+
+Prod stays untouched until you change the pinned tag or digest in compose.
 
 ### Ship a release (prod)
 
-1. Merge changes to `main` (CI on PRs; `edge` image updates automatically).
+1. Merge to `main` (PR CI + push CI; then **edge** publishes if green).
 2. Bump [`VERSION.txt`](VERSION.txt) on `main` (e.g. `0.2.2`).
-3. Commit, tag, and push:
+3. Tag and push:
 
 ```bash
 git tag v0.2.2
 git push origin v0.2.2
 ```
 
-4. GitHub Actions publishes `dx616b/musix:0.2.2` and `:latest`.
-5. On the prod host, set `image: dx616b/musix:0.2.2` and `docker compose pull && docker compose up -d`.
+4. Release workflow publishes `0.2.2`, `latest`, and `sha-<commit>`.
+5. On prod, pin semver **or** digest from the release workflow summary:
+
+```yaml
+image: dx616b/musix:0.2.2
+# strongest pin:
+# image: dx616b/musix@sha256:<digest from Actions summary>
+```
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ### Run a preview stack
 
