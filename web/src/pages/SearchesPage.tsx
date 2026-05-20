@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import TorrentPreviewPanel from '../components/TorrentPreviewPanel'
 import {
   clearAllStoredSearches,
@@ -20,6 +20,9 @@ function formatWhen(iso: string) {
 }
 
 export default function SearchesPage() {
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const openedFromUrl = useRef<string | null>(null)
   const [rows, setRows] = useState<SearchHistory[]>([])
   const [selected, setSelected] = useState<SearchHistory | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -43,18 +46,33 @@ export default function SearchesPage() {
     refresh()
   }, [refresh])
 
-  async function openCached(query: string) {
-    setLoading(query)
-    setError(null)
-    try {
-      const row = await getStoredSearch(query)
-      setSelected(row)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load saved results')
-    } finally {
-      setLoading(null)
-    }
-  }
+  const openCached = useCallback(
+    async (query: string, options?: { redirectIfMissing?: boolean }) => {
+      setLoading(query)
+      setError(null)
+      try {
+        const row = await getStoredSearch(query)
+        setSelected(row)
+      } catch (err) {
+        if (options?.redirectIfMissing) {
+          openedFromUrl.current = null
+          navigate(`/?q=${encodeURIComponent(query)}`)
+          return
+        }
+        setError(err instanceof Error ? err.message : 'Failed to load saved results')
+      } finally {
+        setLoading(null)
+      }
+    },
+    [navigate],
+  )
+
+  useEffect(() => {
+    const q = searchParams.get('q')?.trim() ?? ''
+    if (!q || openedFromUrl.current === q) return
+    openedFromUrl.current = q
+    void openCached(q, { redirectIfMissing: true })
+  }, [searchParams, openCached])
 
   async function removeOne(query: string) {
     setRemoving(query)
