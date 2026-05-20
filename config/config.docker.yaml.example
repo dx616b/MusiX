@@ -1,5 +1,7 @@
 # Copy to config.docker.yaml for Docker (gitignored).
 # Point at your existing Prowlarr, Jackett, and Transmission instances.
+logLevel: info
+
 server:
   host: "0.0.0.0"
   port: 8080

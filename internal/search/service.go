@@ -2,12 +2,12 @@ package search
 
 import (
 	"context"
-	"log"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/dx616b/musicx/internal/jackett"
+	log "github.com/dx616b/musicx/internal/log"
 	"github.com/dx616b/musicx/internal/prowlarr"
 )
 
@@ -47,11 +47,11 @@ func (s *Service) Search(ctx context.Context, query string) ([]Result, error) {
 			defer wg.Done()
 			ts, err := fn()
 			if err != nil {
-				log.Printf("search %s: %v", source, err)
+				log.Warnf("search %s: %v", source, err)
 				return
 			}
 			if len(ts) == 0 {
-				log.Printf("search %s: no results", source)
+				log.Debugf("search %s: no results", source)
 				return
 			}
 			mu.Lock()

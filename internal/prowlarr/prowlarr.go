@@ -47,7 +47,7 @@ type Prowlarr struct {
 }
 
 func New(apiURL string, apiKey string) *Prowlarr {
-	log.Infof("Prowlarr.New called: apiURL=%s, apiKey=%s", apiURL, maskAPIKey(apiKey))
+	log.Debugf("Prowlarr.New called: apiURL=%s, apiKey=%s", apiURL, maskAPIKey(apiKey))
 	if apiURL == "" || apiKey == "" {
 		log.Errorf("Prowlarr: New() called with empty parameters - apiURL: '%s', apiKey: '%s'", apiURL, maskAPIKey(apiKey))
 		return nil

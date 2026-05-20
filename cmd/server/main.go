@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/dx616b/musicx/internal/config"
 	"github.com/dx616b/musicx/internal/handlers"
 	"github.com/dx616b/musicx/internal/jackett"
+	log "github.com/dx616b/musicx/internal/log"
 	"github.com/dx616b/musicx/internal/prowlarr"
 	"github.com/dx616b/musicx/internal/search"
 	"github.com/dx616b/musicx/internal/settings"
@@ -27,6 +28,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v (copy config/config.yaml.example to config/config.yaml)", err)
 	}
+
+	logLevel := strings.TrimSpace(cfg.LogLevel)
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	log.SetLevelFromString(logLevel)
+	log.Infof("Logging level: %s", strings.ToUpper(logLevel))
 
 	st, err := store.Open(cfg.Store.SQLitePath)
 	if err != nil {
@@ -49,24 +57,26 @@ func main() {
 
 	app := fiber.New()
 	app.Use(recover.New())
-	app.Use(logger.New())
+	if log.IsDebug() {
+		app.Use(logger.New())
+	}
 	app.Use(cors.New())
 
 	handlers.NewAPI(searchSvc, st, tx, &pr, settingsMgr).Register(app)
 	serveStatic(app)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
-	log.Printf("MusiX listening on http://%s", addr)
-	log.Fatal(app.Listen(addr))
+	log.Infof("MusiX listening on http://%s", addr)
+	log.Fatalf("listen: %v", app.Listen(addr))
 }
 
 func serveStatic(app *fiber.App) {
 	dist := staticDistDir()
 	if dist == "" {
-		log.Print("static UI disabled: web/dist not found (run: cd web && npm run build)")
+		log.Warnf("static UI disabled: web/dist not found (run: cd web && npm run build)")
 		return
 	}
-	log.Printf("serving UI from %s", dist)
+	log.Infof("serving UI from %s", dist)
 	app.Static("/", dist, fiber.Static{Index: "index.html", Browse: false})
 	app.Get("/favicon.ico", func(c *fiber.Ctx) error {
 		if err := c.SendFile(filepath.Join(dist, "favicon.svg")); err != nil {

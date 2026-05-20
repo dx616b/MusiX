@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	LogLevel     string             `yaml:"logLevel"`
 	Server       ServerConfig       `yaml:"server"`
 	Prowlarr     ProwlarrConfig     `yaml:"prowlarr"`
 	Jackett      JackettConfig      `yaml:"jackett"`
@@ -85,6 +86,9 @@ func applyEnv(cfg *Config) {
 		cfg.Store.SQLitePath = v
 	} else if v := os.Getenv("MUSICX_SQLITE"); v != "" {
 		cfg.Store.SQLitePath = v
+	}
+	if v := os.Getenv("LOG_LEVEL"); v != "" {
+		cfg.LogLevel = v
 	}
 }
 
