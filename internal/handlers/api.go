@@ -43,6 +43,8 @@ func (a *API) Register(app fiber.Router) {
 	api.Get("/searches", a.ListSearches)
 	api.Delete("/searches", a.DeleteSearches)
 	api.Get("/torrent/preview", a.TorrentPreview)
+	api.Delete("/torrent/session", a.ReleaseTorrentSession)
+	api.Post("/torrent/sessions/release", a.ReleaseTorrentSessions)
 	api.Get("/torrent/stream", a.TorrentStream)
 	api.Get("/downloads", a.ListDownloads)
 	api.Post("/downloads", a.CreateDownload)
@@ -113,6 +115,29 @@ func (a *API) TorrentStream(c *fiber.Ctx) error {
 		}
 	})
 	return adaptor.HTTPHandler(handler)(c)
+}
+
+func (a *API) ReleaseTorrentSession(c *fiber.Ctx) error {
+	infoHash := strings.TrimSpace(c.Query("infoHash"))
+	if infoHash == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "infoHash is required")
+	}
+	magnetmetadata.ReleaseSession(infoHash)
+	return c.JSON(fiber.Map{"released": true, "infoHash": infoHash})
+}
+
+func (a *API) ReleaseTorrentSessions(c *fiber.Ctx) error {
+	var body struct {
+		InfoHashes []string `json:"infoHashes"`
+	}
+	if err := c.BodyParser(&body); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid JSON body")
+	}
+	if len(body.InfoHashes) == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "infoHashes is required")
+	}
+	n := magnetmetadata.ReleaseSessions(body.InfoHashes)
+	return c.JSON(fiber.Map{"released": n, "infoHashes": body.InfoHashes})
 }
 
 func (a *API) TorrentPreview(c *fiber.Ctx) error {

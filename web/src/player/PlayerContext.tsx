@@ -8,7 +8,12 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react'
-
+import { infoHashFromStreamUrl } from '../api'
+import {
+  installTorrentSessionUnload,
+  trackTorrentSession,
+  untrackTorrentSession,
+} from '../torrentSessionTracking'
 export type NowPlayingTrack = {
   src: string
   torrentTitle: string
@@ -31,6 +36,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [track, setTrack] = useState<NowPlayingTrack | null>(null)
   const [playing, setPlaying] = useState(false)
+
+  useEffect(() => {
+    installTorrentSessionUnload()
+  }, [])
+
+  useEffect(() => {
+    const ih = track ? infoHashFromStreamUrl(track.src) : undefined
+    if (!ih) return
+    trackTorrentSession(ih)
+    return () => untrackTorrentSession(ih)
+  }, [track?.src])
 
   const stop = useCallback(() => {
     const el = audioRef.current

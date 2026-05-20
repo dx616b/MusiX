@@ -62,7 +62,7 @@ Open **http://localhost:8080**
 
 Optional env vars (override YAML): `PROWLARR_URL`, `PROWLARR_API_KEY`, `JACKETT_URL`, `JACKETT_API_KEY`, `TRANSMISSION_URL`, `TRANSMISSION_USER`, `TRANSMISSION_PASS`, `MUSIX_SQLITE`, `SETTINGS_FILE`.
 
-Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to disable.
+Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to disable. Session RAM: `TORRENT_SESSION_MAX` (default 2, evicts oldest idle first), `TORRENT_SESSION_LEAK_TTL_MINUTES` (default 5).
 
 ## Releases
 

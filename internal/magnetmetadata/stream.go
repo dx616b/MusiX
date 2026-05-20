@@ -44,6 +44,17 @@ func OpenFile(ctx context.Context, pr *prowlarr.Prowlarr, magnetOrURL, infoHash,
 
 // ServeFile streams a torrent file over HTTP with Range support (for <audio> / seeking).
 func ServeFile(w http.ResponseWriter, r *http.Request, pr *prowlarr.Prowlarr, magnetOrURL, infoHash, title, filePath string) error {
+	ih := normalizeInfoHash(infoHash)
+	if ih == "" {
+		magnetURI, resolveErr := prowlarr.ResolveMagnetURI(r.Context(), pr, magnetOrURL, infoHash, title)
+		if resolveErr == nil {
+			ih = normalizeInfoHash(infoHashFromMagnet(magnetURI))
+		}
+	}
+	if ih != "" {
+		defer ReleaseSession(ih)
+	}
+
 	reader, size, ctype, err := OpenFile(r.Context(), pr, magnetOrURL, infoHash, title, filePath)
 	if err != nil {
 		return err

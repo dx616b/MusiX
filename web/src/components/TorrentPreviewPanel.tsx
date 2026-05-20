@@ -4,11 +4,13 @@ import {
   formatBytes,
   PREVIEW_METADATA_TIMEOUT_SECS,
   previewTorrent,
+  releaseTorrentSession,
   torrentStreamUrl,
   type SearchResult,
   type TorrentPreview,
 } from '../api'
 import { usePlayer } from '../player/PlayerContext'
+import { trackTorrentSession, untrackTorrentSession } from '../torrentSessionTracking'
 
 type Props = {
   result: SearchResult
@@ -101,6 +103,16 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
       cancelled = true
     }
   }, [result])
+
+  useEffect(() => {
+    const ih = preview?.infoHash?.trim().toLowerCase()
+    if (!ih) return
+    trackTorrentSession(ih)
+    return () => {
+      untrackTorrentSession(ih)
+      void releaseTorrentSession(ih)
+    }
+  }, [preview?.infoHash])
 
   const streamOpts = {
     infoHash: preview?.infoHash || result.infoHash,
