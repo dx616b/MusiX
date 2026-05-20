@@ -1,4 +1,4 @@
-# Reusable image build (OCI tags + digest). Called by edge / nightly / release workflows.
+# Reusable image build (OCI tags + digest). Called by edge and release workflows.
 name: Docker build
 
 on:

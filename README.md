@@ -21,7 +21,7 @@ Open **http://localhost:8080**
 
 Pre-built release image: `docker pull dx616b/musix:0.2.1` (pin a version on prod; avoid `:latest` there)
 
-Preview images: `dx616b/musix:edge` (each merge to `main`), `dx616b/musix:nightly` (daily cron). See [Release channels](#release-channels).
+Preview image: `dx616b/musix:edge` (each green merge to `main`). See [Release channels](#release-channels).
 
 If logs show `unable to open database file` for `/app/data/musicx.db`, fix data volume ownership then restart:
 
@@ -75,8 +75,7 @@ Trunk-based flow: merge to `main` → **CI** → **edge** image only if CI is gr
 | `0.2.1`, … | No (semver) | Git tag `v0.2.1` | **Production** — pin in compose |
 | `latest` | Yes | Last `v*` release only | Convenience; not “current main” |
 | `edge` | Yes | After CI passes on `main` | Bleeding-edge preview |
-| `sha-<git>` | No | Every edge/nightly/release build | Exact commit artifact (debug / rollback) |
-| `nightly`, `nightly-YYYY-MM-DD` | Yes / dated | Daily 03:00 UTC on `main` | Calm preview |
+| `sha-<git>` | No | Every edge/release build | Exact commit artifact (debug / rollback) |
 
 **Why `sha-*`?** In modern supply chains, moving tags (`edge`, `latest`) are aliases; `sha-abc1234` is the immutable OCI artifact for one build. Pin prod with semver or `image@sha256:…` (digest printed in the GitHub Actions job summary).
 
