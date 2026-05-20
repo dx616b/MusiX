@@ -41,6 +41,7 @@ func (a *API) Register(app fiber.Router) {
 	api.Put("/settings", a.PutSettings)
 	api.Get("/search", a.SearchTorrents)
 	api.Get("/searches", a.ListSearches)
+	api.Delete("/searches", a.DeleteSearches)
 	api.Get("/torrent/preview", a.TorrentPreview)
 	api.Get("/torrent/stream", a.TorrentStream)
 	api.Get("/downloads", a.ListDownloads)
@@ -140,6 +141,32 @@ func magnetmetadataError(c *fiber.Ctx, err error) error {
 		"error":   "preview_failed",
 		"message": err.Error(),
 	})
+}
+
+func (a *API) DeleteSearches(c *fiber.Ctx) error {
+	q := strings.TrimSpace(c.Query("q"))
+	all := c.QueryBool("all", false)
+	if all && q != "" {
+		return fiber.NewError(fiber.StatusBadRequest, "use either q or all=true, not both")
+	}
+	if all {
+		n, err := a.Store.ClearSearches()
+		if err != nil {
+			return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(fiber.Map{"cleared": n})
+	}
+	if q == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "q or all=true is required")
+	}
+	ok, err := a.Store.DeleteSearch(q)
+	if err != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+	}
+	if !ok {
+		return fiber.NewError(fiber.StatusNotFound, "search not found")
+	}
+	return c.JSON(fiber.Map{"deleted": true, "query": q})
 }
 
 func (a *API) ListSearches(c *fiber.Ctx) error {

@@ -143,6 +143,31 @@ FROM searches WHERE query_key = ?`, key)
 	return scanSearchRow(row)
 }
 
+func (s *Store) DeleteSearch(query string) (bool, error) {
+	key := normalizeSearchQuery(query)
+	if key == "" {
+		return false, nil
+	}
+	res, err := s.db.Exec(`DELETE FROM searches WHERE query_key = ?`, key)
+	if err != nil {
+		return false, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// ClearSearches removes all stored search rows. Returns how many were deleted.
+func (s *Store) ClearSearches() (int64, error) {
+	res, err := s.db.Exec(`DELETE FROM searches`)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 func (s *Store) ListSearches(limit int, includeResults bool) ([]Search, error) {
 	if limit <= 0 {
 		limit = 50

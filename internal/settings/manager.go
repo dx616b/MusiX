@@ -17,11 +17,11 @@ import (
 
 // Public is returned by GET /api/settings (secrets masked).
 type Public struct {
-	ConfigPath   string                 `json:"configPath"`
-	OverridePath string                 `json:"overridePath"`
-	Prowlarr     IntegrationPublic      `json:"prowlarr"`
-	Jackett      IntegrationPublic      `json:"jackett"`
-	Transmission TransmissionPublic     `json:"transmission"`
+	ConfigPath   string             `json:"configPath"`
+	OverridePath string             `json:"overridePath"`
+	Prowlarr     IntegrationPublic  `json:"prowlarr"`
+	Jackett      IntegrationPublic  `json:"jackett"`
+	Transmission TransmissionPublic `json:"transmission"`
 }
 
 type IntegrationPublic struct {
@@ -39,9 +39,9 @@ type TransmissionPublic struct {
 
 // Update is the PUT /api/settings body. Empty apiKey/password keeps the stored value.
 type Update struct {
-	Prowlarr     *IntegrationUpdate     `json:"prowlarr,omitempty"`
-	Jackett      *IntegrationUpdate     `json:"jackett,omitempty"`
-	Transmission *TransmissionUpdate    `json:"transmission,omitempty"`
+	Prowlarr     *IntegrationUpdate  `json:"prowlarr,omitempty"`
+	Jackett      *IntegrationUpdate  `json:"jackett,omitempty"`
+	Transmission *TransmissionUpdate `json:"transmission,omitempty"`
 }
 
 type IntegrationUpdate struct {

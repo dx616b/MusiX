@@ -138,7 +138,7 @@ func (j *Jackett) manualSearchJSON(ctx context.Context, query string, contentTyp
 
 	out := make([]*prowlarr.Torrent, 0, len(rawRows))
 	for _, row := range rawRows {
-		t := jackettManualRowToTorrent(row)
+		t := j.jackettManualRowToTorrent(row)
 		if t != nil {
 			out = append(out, t)
 		}
@@ -320,7 +320,7 @@ func normalizeElapsed(v float64) float64 {
 	return v
 }
 
-func jackettManualRowToTorrent(raw json.RawMessage) *prowlarr.Torrent {
+func (j *Jackett) jackettManualRowToTorrent(raw json.RawMessage) *prowlarr.Torrent {
 	var row map[string]interface{}
 	if err := json.Unmarshal(raw, &row); err != nil {
 		return nil
@@ -333,10 +333,14 @@ func jackettManualRowToTorrent(raw json.RawMessage) *prowlarr.Torrent {
 		magnet = strings.TrimSpace(firstStringField(row, "magnetLink", "MagnetLink"))
 	}
 	infoHash := strings.TrimSpace(firstStringField(row, "infoHash", "InfoHash"))
+	indexerDisp := strings.TrimSpace(firstStringField(row, "indexer", "Indexer", "indexerName", "IndexerName"))
 	tracker := strings.TrimSpace(firstStringField(row, "tracker", "Tracker"))
 	if tracker == "" {
 		// Jackett sets Tracker from indexer name but some payloads may only carry TrackerId (slug).
 		tracker = strings.TrimSpace(firstStringField(row, "trackerId", "TrackerId"))
+	}
+	if indexerDisp == "" {
+		indexerDisp = tracker
 	}
 
 	if guid == "" {
@@ -388,7 +392,7 @@ func jackettManualRowToTorrent(raw json.RawMessage) *prowlarr.Torrent {
 		Files:          uint(files),
 		Imdb:           imdb,
 		IndexerId:      0,
-		IndexerName:    tracker,
+		IndexerName:    indexerDisp,
 		VideoFileIndex: -1,
 		GID:            genGIDFromGuid(guid),
 	}

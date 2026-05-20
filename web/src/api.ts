@@ -81,6 +81,18 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json()
 }
 
+async function httpDelete(path: string): Promise<unknown> {
+  const res = await fetch(path, { method: 'DELETE' })
+  if (!res.ok) throw await readApiError(res)
+  const text = await res.text()
+  if (!text.trim()) return undefined
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    return text
+  }
+}
+
 /** Default torrent metadata timeout (seconds); matches server unless TORRENT_MAGNET_METADATA_TIMEOUT_SECS is set. */
 export const PREVIEW_METADATA_TIMEOUT_SECS = 90
 
@@ -98,6 +110,16 @@ export function listSearches(limit = 50, includeResults = false) {
 
 export function getStoredSearch(q: string) {
   return get<SearchHistory>(`/api/searches?q=${encodeURIComponent(q)}`)
+}
+
+/** Remove one saved search by query text. */
+export function deleteStoredSearch(q: string) {
+  return httpDelete(`/api/searches?q=${encodeURIComponent(q)}`) as Promise<{ deleted: boolean; query: string }>
+}
+
+/** Remove all saved searches. Returns count cleared. */
+export function clearAllStoredSearches() {
+  return httpDelete('/api/searches?all=1') as Promise<{ cleared: number }>
 }
 
 export function listDownloads() {
