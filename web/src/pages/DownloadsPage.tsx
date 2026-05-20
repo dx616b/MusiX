@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import SearchQueryLink from '../components/SearchQueryLink'
-import { listDownloads, listSearches, normalizeSearchQuery, type Download } from '../api'
+import { listDownloads, type Download } from '../api'
 
 function formatWhen(iso: string) {
   const d = new Date(iso)
@@ -19,7 +19,6 @@ function statusBucket(status: string, percentDone: number): 'active' | 'done' | 
 
 export default function DownloadsPage() {
   const [rows, setRows] = useState<Download[]>([])
-  const [historyKeys, setHistoryKeys] = useState<Set<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [filterText, setFilterText] = useState('')
@@ -28,11 +27,8 @@ export default function DownloadsPage() {
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const [downloads, searches] = await Promise.all([listDownloads(), listSearches(200)])
-      setRows(downloads.downloads ?? [])
-      setHistoryKeys(
-        new Set((searches.searches ?? []).map((s) => normalizeSearchQuery(s.query))),
-      )
+      const data = await listDownloads()
+      setRows(data.downloads ?? [])
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load downloads')
@@ -105,7 +101,7 @@ export default function DownloadsPage() {
               <strong>{d.title}</strong>
               {d.query && (
                 <span className="muted">
-                  Search: <SearchQueryLink query={d.query} historyKeys={historyKeys} />
+                  Search: <SearchQueryLink query={d.query} />
                 </span>
               )}
               <span className="muted">
