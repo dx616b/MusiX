@@ -1,7 +1,6 @@
-name: Docker build and push
+name: Docker edge
 
-# CI runs on PRs; merges to main build and push the image.
-# Tags: dx616b/musix:<VERSION.txt> and :latest
+# Preview channel: every merge to main. Does not update :latest or semver tags.
 on:
   push:
     branches:
@@ -9,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: docker-publish-${{ github.sha }}
+  group: docker-edge-${{ github.sha }}
   cancel-in-progress: true
 
 env:
@@ -18,16 +17,15 @@ env:
 jobs:
   build-push:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Version from VERSION.txt
-        id: ver
-        run: echo "version=$(tr -d '[:space:]' < VERSION.txt)" >> "$GITHUB_OUTPUT"
+      - name: Short SHA
+        id: meta
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v4
 
@@ -41,7 +39,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
-            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:edge
+            ${{ env.IMAGE }}:sha-${{ steps.meta.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
