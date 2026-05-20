@@ -19,7 +19,11 @@ docker compose up --build -d
 
 Open **http://localhost:8080**
 
-Pre-built image: `docker pull dx616b/musix:latest`
+Or use the published image:
+
+```bash
+docker pull dx616b/musix:latest
+```
 
 If logs show `unable to open database file` for `/app/data/musicx.db`, fix data volume ownership then restart:
 
@@ -62,6 +66,6 @@ Open **http://localhost:8080**
 
 Optional env vars (override YAML): `PROWLARR_URL`, `PROWLARR_API_KEY`, `JACKETT_URL`, `JACKETT_API_KEY`, `TRANSMISSION_URL`, `TRANSMISSION_USER`, `TRANSMISSION_PASS`, `MUSIX_SQLITE`, `SETTINGS_FILE`.
 
-Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TORRENT_MAGNET_METADATA_DISABLED=1` to disable.
+See `.env.example` for more tuning options.
 
 <img width="1904" height="976" alt="musix" src="https://github.com/user-attachments/assets/fff9cdfa-f36c-497f-836b-a875886cc2c8" />
