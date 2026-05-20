@@ -67,3 +67,6 @@ Torrent preview/stream: `TORRENT_MAGNET_METADATA_TIMEOUT_SECS` (default 90), `TO
 ## Releases
 
 Version in [`VERSION.txt`](VERSION.txt). Images on Docker Hub: `dx616b/musix:<version>` and `:latest`.
+
+
+<img width="1904" height="976" alt="musix" src="https://github.com/user-attachments/assets/fff9cdfa-f36c-497f-836b-a875886cc2c8" />
