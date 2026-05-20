@@ -103,8 +103,8 @@ export default function TorrentPreviewPanel({ result, query, onClose }: Props) {
   }, [result])
 
   const streamOpts = {
-    magnet: result.magnetUri,
     infoHash: preview?.infoHash || result.infoHash,
+    magnet: result.magnetUri,
     downloadUrl: result.downloadUrl,
     title: result.title,
   }

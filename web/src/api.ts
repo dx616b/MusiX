@@ -102,6 +102,16 @@ export function search(q: string, musicOnly = true) {
   return get<{ query: string; musicOnly: boolean; results: SearchResult[] }>(`/api/search?${params}`)
 }
 
+/** Match server-side search key normalization (store.normalizeSearchQuery). */
+export function normalizeSearchQuery(q: string): string {
+  return q
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ')
+}
+
 export function listSearches(limit = 50, includeResults = false) {
   const params = new URLSearchParams({ limit: String(limit) })
   if (includeResults) params.set('includeResults', 'true')
@@ -151,6 +161,55 @@ export interface TorrentPreview {
   files: TorrentPreviewFile[]
 }
 
+/** Parse btih from a magnet URI so we can avoid putting huge tracker lists in query strings. */
+export function parseInfoHashFromMagnet(magnet: string): string | undefined {
+  const raw = magnet.trim()
+  if (!raw.toLowerCase().startsWith('magnet:')) return undefined
+  try {
+    const u = new URL(raw)
+    const xt = u.searchParams.get('xt') ?? ''
+    const prefix = 'urn:btih:'
+    if (!xt.toLowerCase().startsWith(prefix)) return undefined
+    const hash = xt.slice(prefix.length).split('&')[0].trim()
+    return hash ? hash.toLowerCase() : undefined
+  } catch {
+    const m = raw.match(/btih:([a-fA-F0-9]{40})/i)
+    return m?.[1]?.toLowerCase()
+  }
+}
+
+function effectiveTorrentInfoHash(opts: {
+  infoHash?: string
+  magnet?: string
+}): string | undefined {
+  const ih = opts.infoHash?.trim().toLowerCase()
+  if (ih) return ih
+  if (opts.magnet) return parseInfoHashFromMagnet(opts.magnet)
+  return undefined
+}
+
+/** Query params for preview/stream; prefers infoHash so reverse proxies do not reject oversized URLs. */
+function torrentQueryParams(opts: {
+  title: string
+  path?: string
+  magnet?: string
+  infoHash?: string
+  downloadUrl?: string
+  download?: boolean
+}): URLSearchParams {
+  const params = new URLSearchParams({ title: opts.title })
+  if (opts.path) params.set('path', opts.path)
+  const ih = effectiveTorrentInfoHash(opts)
+  if (ih) {
+    params.set('infoHash', ih)
+  } else {
+    const magnet = opts.magnet?.trim() || opts.downloadUrl?.trim() || ''
+    if (magnet) params.set('magnet', magnet)
+  }
+  if (opts.download) params.set('download', '1')
+  return params
+}
+
 export function torrentStreamUrl(opts: {
   magnet?: string
   infoHash?: string
@@ -159,12 +218,7 @@ export function torrentStreamUrl(opts: {
   path: string
   download?: boolean
 }) {
-  const params = new URLSearchParams({ title: opts.title, path: opts.path })
-  const magnet = opts.magnet || opts.downloadUrl || ''
-  if (magnet) params.set('magnet', magnet)
-  if (opts.infoHash) params.set('infoHash', opts.infoHash)
-  if (opts.download) params.set('download', '1')
-  return `/api/torrent/stream?${params}`
+  return `/api/torrent/stream?${torrentQueryParams(opts)}`
 }
 
 export function previewTorrent(opts: {
@@ -173,11 +227,7 @@ export function previewTorrent(opts: {
   downloadUrl?: string
   title: string
 }) {
-  const params = new URLSearchParams({ title: opts.title })
-  const magnet = opts.magnet || opts.downloadUrl || ''
-  if (magnet) params.set('magnet', magnet)
-  if (opts.infoHash) params.set('infoHash', opts.infoHash)
-  return get<TorrentPreview>(`/api/torrent/preview?${params}`)
+  return get<TorrentPreview>(`/api/torrent/preview?${torrentQueryParams(opts)}`)
 }
 
 export function magnetForResult(r: SearchResult): string {
