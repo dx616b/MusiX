@@ -1,34 +1,35 @@
-import { Link } from 'react-router-dom'
-import { normalizeSearchQuery } from '../api'
+import type { MouseEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getStoredSearch } from '../api'
 
 type Props = {
   query: string
-  /** Normalized query keys from listSearches (optional; avoids extra API calls). */
-  historyKeys?: ReadonlySet<string>
   className?: string
 }
 
-export function searchPathForQuery(query: string, historyKeys?: ReadonlySet<string>): string {
-  const q = query.trim()
-  if (!q) return '/'
-  const inHistory = historyKeys?.has(normalizeSearchQuery(q)) ?? false
-  const params = new URLSearchParams({ q })
-  if (inHistory) {
-    return `/searches?${params}`
-  }
-  return `/?${params}`
-}
-
-export default function SearchQueryLink({ query, historyKeys, className = 'text-btn' }: Props) {
+export default function SearchQueryLink({ query, className = 'text-btn' }: Props) {
+  const navigate = useNavigate()
   const q = query.trim()
   if (!q) return null
-  const to = searchPathForQuery(q, historyKeys)
-  const title = historyKeys?.has(normalizeSearchQuery(q))
-    ? 'Open saved search in History'
-    : 'Run a new search'
+
+  async function open(e: MouseEvent) {
+    e.preventDefault()
+    try {
+      await getStoredSearch(q)
+      navigate(`/searches?q=${encodeURIComponent(q)}`)
+    } catch {
+      navigate(`/?q=${encodeURIComponent(q)}`)
+    }
+  }
+
   return (
-    <Link to={to} className={className} title={title}>
+    <a
+      href={`/searches?q=${encodeURIComponent(q)}`}
+      className={className}
+      title="Open saved search or run a new search"
+      onClick={(e) => void open(e)}
+    >
       {q}
-    </Link>
+    </a>
   )
 }

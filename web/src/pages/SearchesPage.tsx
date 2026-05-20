@@ -8,6 +8,7 @@ import {
   getStoredSearch,
   listSearches,
   magnetForResult,
+  normalizeSearchQuery,
   queueDownload,
   type SearchHistory,
   type SearchResult,
@@ -22,7 +23,7 @@ function formatWhen(iso: string) {
 export default function SearchesPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const openedFromUrl = useRef<string | null>(null)
+  const cachedResultsRef = useRef<HTMLElement>(null)
   const [rows, setRows] = useState<SearchHistory[]>([])
   const [selected, setSelected] = useState<SearchHistory | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +32,7 @@ export default function SearchesPage() {
   const [preview, setPreview] = useState<SearchResult | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -39,6 +41,8 @@ export default function SearchesPage() {
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load searches')
+    } finally {
+      setHistoryLoaded(true)
     }
   }, [])
 
@@ -46,17 +50,39 @@ export default function SearchesPage() {
     refresh()
   }, [refresh])
 
+  const scrollToCachedResults = useCallback(() => {
+    requestAnimationFrame(() => {
+      cachedResultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
   const openCached = useCallback(
-    async (query: string, options?: { redirectIfMissing?: boolean }) => {
-      setLoading(query)
+    async (query: string, options?: { redirectIfMissing?: boolean; scroll?: boolean }) => {
+      const trimmed = query.trim()
+      if (!trimmed) return
+      setLoading(trimmed)
       setError(null)
       try {
-        const row = await getStoredSearch(query)
+        const row = await getStoredSearch(trimmed)
         setSelected(row)
+        if (options?.scroll) scrollToCachedResults()
       } catch (err) {
+        const match = rows.find(
+          (r) => normalizeSearchQuery(r.query) === normalizeSearchQuery(trimmed),
+        )
+        if (match && match.query !== trimmed) {
+          try {
+            const row = await getStoredSearch(match.query)
+            setSelected(row)
+            navigate(`/searches?q=${encodeURIComponent(match.query)}`, { replace: true })
+            if (options?.scroll) scrollToCachedResults()
+            return
+          } catch {
+            /* try redirect below */
+          }
+        }
         if (options?.redirectIfMissing) {
-          openedFromUrl.current = null
-          navigate(`/?q=${encodeURIComponent(query)}`)
+          navigate(`/?q=${encodeURIComponent(trimmed)}`)
           return
         }
         setError(err instanceof Error ? err.message : 'Failed to load saved results')
@@ -64,15 +90,15 @@ export default function SearchesPage() {
         setLoading(null)
       }
     },
-    [navigate],
+    [navigate, rows, scrollToCachedResults],
   )
 
+  const qFromUrl = searchParams.get('q')?.trim() ?? ''
+
   useEffect(() => {
-    const q = searchParams.get('q')?.trim() ?? ''
-    if (!q || openedFromUrl.current === q) return
-    openedFromUrl.current = q
-    void openCached(q, { redirectIfMissing: true })
-  }, [searchParams, openCached])
+    if (!qFromUrl || !historyLoaded) return
+    void openCached(qFromUrl, { redirectIfMissing: true, scroll: true })
+  }, [qFromUrl, historyLoaded, openCached])
 
   async function removeOne(query: string) {
     setRemoving(query)
@@ -143,6 +169,9 @@ export default function SearchesPage() {
           </button>
         </p>
       )}
+      {qFromUrl && loading === qFromUrl && (
+        <p className="muted">Opening saved results for &ldquo;{qFromUrl}&rdquo;…</p>
+      )}
       {error && <p className="error">{error}</p>}
       <ul className="list">
         {rows.map((s) => (
@@ -182,7 +211,7 @@ export default function SearchesPage() {
       {rows.length === 0 && !error && <p className="muted">No searches yet.</p>}
 
       {selected && (
-        <section className="card cached-results">
+        <section ref={cachedResultsRef} className="card cached-results">
           <div className="cached-results-header">
             <h2>{selected.query}</h2>
             <span className="muted">
