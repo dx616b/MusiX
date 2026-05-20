@@ -44,11 +44,11 @@ func main() {
 
 	var pr *prowlarr.Prowlarr
 	if cfg.Prowlarr.URL != "" {
-		pr = prowlarr.New(cfg.Prowlarr.URL, cfg.Prowlarr.APIKey)
+		pr = prowlarr.New(cfg.Prowlarr.URL, cfg.Prowlarr.APIKey, cfg.Prowlarr.MusicCategories)
 	}
 	var jk *jackett.Jackett
 	if cfg.Jackett.URL != "" {
-		jk = jackett.New(cfg.Jackett.URL, cfg.Jackett.APIKey)
+		jk = jackett.New(cfg.Jackett.URL, cfg.Jackett.APIKey, cfg.Jackett.MusicCategories)
 	}
 
 	searchSvc := &search.Service{Prowlarr: pr, Jackett: jk}

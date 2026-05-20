@@ -77,7 +77,14 @@ func (a *API) SearchTorrents(c *fiber.Ctx) error {
 	if q == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "q is required")
 	}
-	results, err := a.Search.Search(c.Context(), q)
+	musicOnly := true
+	if raw := strings.TrimSpace(c.Query("musicOnly")); raw != "" {
+		switch strings.ToLower(raw) {
+		case "0", "false", "no", "off":
+			musicOnly = false
+		}
+	}
+	results, err := a.Search.Search(c.Context(), q, musicOnly)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadGateway, err.Error())
 	}
@@ -85,7 +92,7 @@ func (a *API) SearchTorrents(c *fiber.Ctx) error {
 		results = []search.Result{}
 	}
 	_ = a.Store.RecordSearch(q, toStoredResults(results))
-	return c.JSON(fiber.Map{"query": q, "results": results})
+	return c.JSON(fiber.Map{"query": q, "musicOnly": musicOnly, "results": results})
 }
 
 func (a *API) TorrentStream(c *fiber.Ctx) error {

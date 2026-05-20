@@ -8,10 +8,16 @@ server:
 prowlarr:
   url: "http://127.0.0.1:9696"
   apiKey: "your-prowlarr-api-key"
+  # Optional explicit categories for /api/v1/search (comma list in env).
+  # Leave empty to search all categories.
+  musicCategories: ["3000", "3010", "3040"]
 
 jackett:
   url: "http://127.0.0.1:9117"
   apiKey: "your-jackett-api-key"
+  # Torznab/Newznab categories for search.
+  # Leave empty to search all categories.
+  musicCategories: ["3000", "3010", "3040"]
 
 transmission:
   url: "http://127.0.0.1:9091/transmission/rpc"

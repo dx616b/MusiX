@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -22,13 +23,15 @@ type ServerConfig struct {
 }
 
 type ProwlarrConfig struct {
-	URL    string `yaml:"url"`
-	APIKey string `yaml:"apiKey"`
+	URL             string   `yaml:"url"`
+	APIKey          string   `yaml:"apiKey"`
+	MusicCategories []string `yaml:"musicCategories"`
 }
 
 type JackettConfig struct {
-	URL    string `yaml:"url"`
-	APIKey string `yaml:"apiKey"`
+	URL             string   `yaml:"url"`
+	APIKey          string   `yaml:"apiKey"`
+	MusicCategories []string `yaml:"musicCategories"`
 }
 
 type TransmissionConfig struct {
@@ -67,11 +70,33 @@ func applyEnv(cfg *Config) {
 	if v := os.Getenv("PROWLARR_API_KEY"); v != "" {
 		cfg.Prowlarr.APIKey = v
 	}
+	if v := os.Getenv("PROWLARR_MUSIC_CATEGORIES"); v != "" {
+		parts := strings.Split(v, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			code := strings.TrimSpace(p)
+			if code != "" {
+				out = append(out, code)
+			}
+		}
+		cfg.Prowlarr.MusicCategories = out
+	}
 	if v := os.Getenv("JACKETT_URL"); v != "" {
 		cfg.Jackett.URL = v
 	}
 	if v := os.Getenv("JACKETT_API_KEY"); v != "" {
 		cfg.Jackett.APIKey = v
+	}
+	if v := os.Getenv("JACKETT_MUSIC_CATEGORIES"); v != "" {
+		parts := strings.Split(v, ",")
+		out := make([]string, 0, len(parts))
+		for _, p := range parts {
+			code := strings.TrimSpace(p)
+			if code != "" {
+				out = append(out, code)
+			}
+		}
+		cfg.Jackett.MusicCategories = out
 	}
 	if v := os.Getenv("TRANSMISSION_URL"); v != "" {
 		cfg.Transmission.URL = v

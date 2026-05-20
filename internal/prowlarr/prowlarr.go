@@ -44,9 +44,27 @@ type Prowlarr struct {
 	client *resty.Client
 	apiURL string
 	apiKey string
+	musicCategories []string
 }
 
-func New(apiURL string, apiKey string) *Prowlarr {
+func normalizeCategories(categories []string) []string {
+	seen := make(map[string]struct{}, len(categories))
+	out := make([]string, 0, len(categories))
+	for _, raw := range categories {
+		v := strings.TrimSpace(raw)
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+func New(apiURL string, apiKey string, musicCategories []string) *Prowlarr {
 	log.Debugf("Prowlarr.New called: apiURL=%s, apiKey=%s", apiURL, maskAPIKey(apiKey))
 	if apiURL == "" || apiKey == "" {
 		log.Errorf("Prowlarr: New() called with empty parameters - apiURL: '%s', apiKey: '%s'", apiURL, maskAPIKey(apiKey))
@@ -66,9 +84,10 @@ func New(apiURL string, apiKey string) *Prowlarr {
 	}
 
 	prowlarr := &Prowlarr{
-		client: client,
-		apiURL: apiURL,
-		apiKey: apiKey,
+		client:          client,
+		apiURL:          apiURL,
+		apiKey:          apiKey,
+		musicCategories: normalizeCategories(musicCategories),
 	}
 
 	log.Infof("Prowlarr: Successfully created client for URL: %s", apiURL)
@@ -750,17 +769,28 @@ func findVideoFileIndex(files []File) int {
 	return largestIndex
 }
 
-// SearchMusicTorrentsAllIndexers searches for music across all enabled indexers.
-func (j *Prowlarr) SearchMusicTorrentsAllIndexers(ctx context.Context, name string) ([]*Torrent, error) {
-	log.Infof("Prowlarr: Starting music search for '%s' across all indexers", name)
+// SearchTorrentsAllIndexers searches across enabled indexers.
+// When musicOnly is true, configured music categories (or type=music) are used.
+func (j *Prowlarr) SearchTorrentsAllIndexers(ctx context.Context, name string, musicOnly bool) ([]*Torrent, error) {
+	if musicOnly {
+		log.Infof("Prowlarr: Starting music search for '%s' across all indexers", name)
+	} else {
+		log.Infof("Prowlarr: Starting broad search for '%s' across all indexers", name)
+	}
 
 	result := []*Torrent{}
-	resp, err := j.restyR(ctx).
+	req := j.restyR(ctx).
 		SetQueryParam("query", name).
-		SetQueryParam("type", "music").
 		SetQueryParam("limit", "1000").
-		SetResult(&result).
-		Get("/api/v1/search")
+		SetResult(&result)
+	if musicOnly {
+		if len(j.musicCategories) > 0 {
+			req = req.SetQueryParam("categories", strings.Join(j.musicCategories, ","))
+		} else {
+			req = req.SetQueryParam("type", "music")
+		}
+	}
+	resp, err := req.Get("/api/v1/search")
 
 	if err != nil {
 		return nil, err
@@ -772,8 +802,17 @@ func (j *Prowlarr) SearchMusicTorrentsAllIndexers(ctx context.Context, name stri
 	for _, torrent := range result {
 		normaliseTorrent(torrent, j.apiURL)
 	}
-	log.Infof("Prowlarr: Music search for '%s' returned %d torrents", name, len(result))
+	if musicOnly {
+		log.Infof("Prowlarr: Music search for '%s' returned %d torrents", name, len(result))
+	} else {
+		log.Infof("Prowlarr: Broad search for '%s' returned %d torrents", name, len(result))
+	}
 	return result, nil
+}
+
+// SearchMusicTorrentsAllIndexers keeps compatibility with existing call sites.
+func (j *Prowlarr) SearchMusicTorrentsAllIndexers(ctx context.Context, name string) ([]*Torrent, error) {
+	return j.SearchTorrentsAllIndexers(ctx, name, true)
 }
 
 // extractMagnetLinkFromHTML extracts magnet link from HTML content using regex

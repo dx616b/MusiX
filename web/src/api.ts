@@ -84,8 +84,10 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 /** Default torrent metadata timeout (seconds); matches server unless TORRENT_MAGNET_METADATA_TIMEOUT_SECS is set. */
 export const PREVIEW_METADATA_TIMEOUT_SECS = 90
 
-export function search(q: string) {
-  return get<{ query: string; results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`)
+export function search(q: string, musicOnly = true) {
+  const params = new URLSearchParams({ q })
+  params.set('musicOnly', musicOnly ? '1' : '0')
+  return get<{ query: string; musicOnly: boolean; results: SearchResult[] }>(`/api/search?${params}`)
 }
 
 export function listSearches(limit = 50, includeResults = false) {
@@ -163,14 +165,14 @@ export function magnetForResult(r: SearchResult): string {
 export interface AppSettings {
   configPath: string
   overridePath: string
-  prowlarr: { url: string; apiKeySet: boolean; apiKey?: string }
-  jackett: { url: string; apiKeySet: boolean; apiKey?: string }
+  prowlarr: { url: string; apiKeySet: boolean; apiKey?: string; musicCategories?: string[] }
+  jackett: { url: string; apiKeySet: boolean; apiKey?: string; musicCategories?: string[] }
   transmission: { url: string; username: string; passwordSet: boolean }
 }
 
 export interface AppSettingsUpdate {
-  prowlarr?: { url: string; apiKey?: string }
-  jackett?: { url: string; apiKey?: string }
+  prowlarr?: { url: string; apiKey?: string; musicCategories?: string[] }
+  jackett?: { url: string; apiKey?: string; musicCategories?: string[] }
   transmission?: { url: string; username?: string; password?: string }
 }
 

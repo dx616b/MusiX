@@ -9,10 +9,14 @@ server:
 prowlarr:
   url: "http://host.docker.internal:9696"
   apiKey: "YOUR_PROWLARR_API_KEY"
+  # Optional override; leave empty to search all categories.
+  musicCategories: ["3000", "3010", "3040"]
 
 jackett:
   url: "http://host.docker.internal:9117"
   apiKey: "YOUR_JACKETT_API_KEY"
+  # Optional override; leave empty to search all categories.
+  musicCategories: ["3000", "3010", "3040"]
 
 transmission:
   url: "http://host.docker.internal:9091/transmission/rpc"

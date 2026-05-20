@@ -5,8 +5,10 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [prowlarrUrl, setProwlarrUrl] = useState('')
   const [prowlarrKey, setProwlarrKey] = useState('')
+  const [prowlarrMusicCategories, setProwlarrMusicCategories] = useState('')
   const [jackettUrl, setJackettUrl] = useState('')
   const [jackettKey, setJackettKey] = useState('')
+  const [jackettMusicCategories, setJackettMusicCategories] = useState('')
   const [transmissionUrl, setTransmissionUrl] = useState('')
   const [transmissionUser, setTransmissionUser] = useState('')
   const [transmissionPass, setTransmissionPass] = useState('')
@@ -24,7 +26,9 @@ export default function SettingsPage() {
         if (cancelled) return
         setSettings(s)
         setProwlarrUrl(s.prowlarr.url)
+        setProwlarrMusicCategories((s.prowlarr.musicCategories ?? []).join(','))
         setJackettUrl(s.jackett.url)
+        setJackettMusicCategories((s.jackett.musicCategories ?? []).join(','))
         setTransmissionUrl(s.transmission.url)
         setTransmissionUser(s.transmission.username)
         setProwlarrKey('')
@@ -42,6 +46,18 @@ export default function SettingsPage() {
     }
   }, [])
 
+  function parseCategoryCodes(raw: string) {
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const part of raw.split(',')) {
+      const code = part.trim()
+      if (!code || seen.has(code)) continue
+      seen.add(code)
+      out.push(code)
+    }
+    return out
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -52,10 +68,12 @@ export default function SettingsPage() {
         prowlarr: {
           url: prowlarrUrl.trim(),
           ...(prowlarrKey.trim() ? { apiKey: prowlarrKey.trim() } : {}),
+          musicCategories: parseCategoryCodes(prowlarrMusicCategories),
         },
         jackett: {
           url: jackettUrl.trim(),
           ...(jackettKey.trim() ? { apiKey: jackettKey.trim() } : {}),
+          musicCategories: parseCategoryCodes(jackettMusicCategories),
         },
         transmission: {
           url: transmissionUrl.trim(),
@@ -111,6 +129,15 @@ export default function SettingsPage() {
                 autoComplete="off"
               />
             </label>
+            <label>
+              Music category codes
+              <input
+                type="text"
+                value={prowlarrMusicCategories}
+                onChange={(e) => setProwlarrMusicCategories(e.target.value)}
+                placeholder="3000,3010,3040"
+              />
+            </label>
           </fieldset>
 
           <fieldset>
@@ -132,6 +159,15 @@ export default function SettingsPage() {
                 onChange={(e) => setJackettKey(e.target.value)}
                 placeholder={settings?.jackett.apiKeySet ? settings.jackett.apiKey ?? '••••••••' : 'Required when URL is set'}
                 autoComplete="off"
+              />
+            </label>
+            <label>
+              Music category codes
+              <input
+                type="text"
+                value={jackettMusicCategories}
+                onChange={(e) => setJackettMusicCategories(e.target.value)}
+                placeholder="3000,3010,3040"
               />
             </label>
           </fieldset>
@@ -170,6 +206,7 @@ export default function SettingsPage() {
 
           <p className="muted settings-hint">
             At least one of Prowlarr or Jackett must be configured. Leave API key / password blank to keep the existing value.
+            Use music category codes like <code>3000,3010,3040</code>; leave empty to search all categories.
           </p>
 
           <button type="submit" disabled={saving}>
