@@ -16,22 +16,19 @@ on:
       digest:
         description: Image digest (pin prod with image@digest)
         value: ${{ jobs.build.outputs.digest }}
-      tags:
-        description: Tags applied to the image
-        value: ${{ jobs.build.outputs.tags }}
 
 permissions:
   contents: read
 
 env:
   IMAGE: dx616b/musix
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
       digest: ${{ steps.build.outputs.digest }}
-      tags: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -39,7 +36,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.IMAGE }}
           tags: ${{ inputs.metadata_tags }}
@@ -69,8 +66,5 @@ jobs:
             echo "### Image"
             echo "\`${{ env.IMAGE }}@${{ steps.build.outputs.digest }}\`"
             echo ""
-            echo "### Tags"
-            echo '```'
-            echo "${{ steps.meta.outputs.tags }}"
-            echo '```'
+            echo "Tags are on Docker Hub for this digest (job output omits tag list — GitHub secret masking)."
           } >> "$GITHUB_STEP_SUMMARY"
