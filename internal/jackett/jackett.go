@@ -33,6 +33,8 @@ type Jackett struct {
 	client *resty.Client
 	base   string
 	apiKey string
+	// Torznab categories used for music search fallback.
+	musicCategories []string
 
 	idxMapMu      sync.Mutex
 	idxMapLoaded  bool
@@ -45,7 +47,24 @@ func normalizeBaseURL(s string) string {
 	return s
 }
 
-func New(baseURL, apiKey string) *Jackett {
+func normalizeCategories(categories []string) []string {
+	seen := make(map[string]struct{}, len(categories))
+	out := make([]string, 0, len(categories))
+	for _, raw := range categories {
+		v := strings.TrimSpace(raw)
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+func New(baseURL, apiKey string, musicCategories []string) *Jackett {
 	baseURL = normalizeBaseURL(baseURL)
 	if baseURL == "" || apiKey == "" {
 		log.Warnf("Jackett.New: missing baseURL or apiKey (baseURL=%q)", baseURL)
@@ -60,10 +79,18 @@ func New(baseURL, apiKey string) *Jackett {
 	c.SetTransport(tracing.HTTPRoundTripper(c.GetClient().Transport))
 
 	return &Jackett{
-		client: c,
-		base:   baseURL,
-		apiKey: apiKey,
+		client:          c,
+		base:            baseURL,
+		apiKey:          apiKey,
+		musicCategories: normalizeCategories(musicCategories),
 	}
+}
+
+func (j *Jackett) MusicCategories() []string {
+	if j == nil {
+		return nil
+	}
+	return append([]string(nil), j.musicCategories...)
 }
 
 func parseUintLoose(s string) (uint, bool) {
@@ -473,8 +500,15 @@ func (j *Jackett) SearchMusicTorrentsAllIndexers(ctx context.Context, q string) 
 		return ts, nil
 	}
 	log.Warnf("Jackett: manual JSON music search failed, falling back to Torznab: %v", err)
-	// Newznab audio: 3000 Music, 3010 Music/MP3, 3040 Music/Lossless
-	return j.searchTorznab(ctx, q, "search", []string{"3000", "3010", "3040"})
+	return j.searchTorznab(ctx, q, "search", j.musicCategories)
+}
+
+// SearchTorrentsAllIndexers searches all categories when musicOnly is false.
+func (j *Jackett) SearchTorrentsAllIndexers(ctx context.Context, q string, musicOnly bool) ([]*prowlarr.Torrent, error) {
+	if musicOnly {
+		return j.SearchMusicTorrentsAllIndexers(ctx, q)
+	}
+	return j.searchTorznab(ctx, q, "search", nil)
 }
 
 // IndexerSummary is one Jackett indexer from the Torznab t=indexers listing (meta indexer "all").

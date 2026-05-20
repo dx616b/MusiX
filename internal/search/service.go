@@ -29,7 +29,7 @@ type Result struct {
 	GUID        string  `json:"guid,omitempty"`
 }
 
-func (s *Service) Search(ctx context.Context, query string) ([]Result, error) {
+func (s *Service) Search(ctx context.Context, query string, musicOnly bool) ([]Result, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return nil, nil
@@ -62,17 +62,20 @@ func (s *Service) Search(ctx context.Context, query string) ([]Result, error) {
 
 	if s.Prowlarr != nil {
 		run("prowlarr", func() ([]*prowlarr.Torrent, error) {
-			return s.Prowlarr.SearchMusicTorrentsAllIndexers(ctx, query)
+			return s.Prowlarr.SearchTorrentsAllIndexers(ctx, query, musicOnly)
 		})
 	}
 	if s.Jackett != nil {
 		run("jackett", func() ([]*prowlarr.Torrent, error) {
-			return s.Jackett.SearchMusicTorrentsAllIndexers(ctx, query)
+			return s.Jackett.SearchTorrentsAllIndexers(ctx, query, musicOnly)
 		})
 	}
 	wg.Wait()
 
-	filtered := FilterMusicTorrents(merged)
+	filtered := merged
+	if musicOnly {
+		filtered = FilterMusicTorrents(merged)
+	}
 	sort.SliceStable(filtered, func(i, j int) bool {
 		if filtered[i].Seeders != filtered[j].Seeders {
 			return filtered[i].Seeders > filtered[j].Seeders

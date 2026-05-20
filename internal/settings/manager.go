@@ -25,9 +25,10 @@ type Public struct {
 }
 
 type IntegrationPublic struct {
-	URL       string `json:"url"`
-	APIKeySet bool   `json:"apiKeySet"`
-	APIKey    string `json:"apiKey,omitempty"` // masked when set
+	URL             string   `json:"url"`
+	APIKeySet       bool     `json:"apiKeySet"`
+	APIKey          string   `json:"apiKey,omitempty"` // masked when set
+	MusicCategories []string `json:"musicCategories,omitempty"`
 }
 
 type TransmissionPublic struct {
@@ -44,8 +45,9 @@ type Update struct {
 }
 
 type IntegrationUpdate struct {
-	URL    string `json:"url"`
-	APIKey string `json:"apiKey"`
+	URL             string   `json:"url"`
+	APIKey          string   `json:"apiKey"`
+	MusicCategories []string `json:"musicCategories,omitempty"`
 }
 
 type TransmissionUpdate struct {
@@ -94,6 +96,9 @@ func (m *Manager) Update(u Update) (Public, error) {
 		} else if k := strings.TrimSpace(u.Prowlarr.APIKey); k != "" {
 			next.Prowlarr.APIKey = k
 		}
+		if u.Prowlarr.MusicCategories != nil {
+			next.Prowlarr.MusicCategories = normalizeCategoryCodes(u.Prowlarr.MusicCategories)
+		}
 	}
 	if u.Jackett != nil {
 		next.Jackett.URL = strings.TrimSpace(u.Jackett.URL)
@@ -101,6 +106,9 @@ func (m *Manager) Update(u Update) (Public, error) {
 			next.Jackett.APIKey = ""
 		} else if k := strings.TrimSpace(u.Jackett.APIKey); k != "" {
 			next.Jackett.APIKey = k
+		}
+		if u.Jackett.MusicCategories != nil {
+			next.Jackett.MusicCategories = normalizeCategoryCodes(u.Jackett.MusicCategories)
 		}
 	}
 	if u.Transmission != nil {
@@ -147,11 +155,11 @@ func (m *Manager) saveOverride(cfg *config.Config) error {
 func (m *Manager) applyLocked(cfg *config.Config) error {
 	var pr *prowlarr.Prowlarr
 	if cfg.Prowlarr.URL != "" {
-		pr = prowlarr.New(cfg.Prowlarr.URL, cfg.Prowlarr.APIKey)
+		pr = prowlarr.New(cfg.Prowlarr.URL, cfg.Prowlarr.APIKey, cfg.Prowlarr.MusicCategories)
 	}
 	var jk *jackett.Jackett
 	if cfg.Jackett.URL != "" {
-		jk = jackett.New(cfg.Jackett.URL, cfg.Jackett.APIKey)
+		jk = jackett.New(cfg.Jackett.URL, cfg.Jackett.APIKey, cfg.Jackett.MusicCategories)
 	}
 	m.search.Prowlarr = pr
 	m.search.Jackett = jk
@@ -165,14 +173,16 @@ func (m *Manager) toPublic() Public {
 		ConfigPath:   m.configPath,
 		OverridePath: m.overridePath,
 		Prowlarr: IntegrationPublic{
-			URL:       m.cfg.Prowlarr.URL,
-			APIKeySet: m.cfg.Prowlarr.APIKey != "",
-			APIKey:    maskSecret(m.cfg.Prowlarr.APIKey),
+			URL:             m.cfg.Prowlarr.URL,
+			APIKeySet:       m.cfg.Prowlarr.APIKey != "",
+			APIKey:          maskSecret(m.cfg.Prowlarr.APIKey),
+			MusicCategories: append([]string(nil), m.cfg.Prowlarr.MusicCategories...),
 		},
 		Jackett: IntegrationPublic{
-			URL:       m.cfg.Jackett.URL,
-			APIKeySet: m.cfg.Jackett.APIKey != "",
-			APIKey:    maskSecret(m.cfg.Jackett.APIKey),
+			URL:             m.cfg.Jackett.URL,
+			APIKeySet:       m.cfg.Jackett.APIKey != "",
+			APIKey:          maskSecret(m.cfg.Jackett.APIKey),
+			MusicCategories: append([]string(nil), m.cfg.Jackett.MusicCategories...),
 		},
 		Transmission: TransmissionPublic{
 			URL:         m.cfg.Transmission.URL,
@@ -198,4 +208,21 @@ func maskSecret(s string) string {
 		return "****"
 	}
 	return s[:4] + "****" + s[len(s)-4:]
+}
+
+func normalizeCategoryCodes(codes []string) []string {
+	seen := make(map[string]struct{}, len(codes))
+	out := make([]string, 0, len(codes))
+	for _, c := range codes {
+		v := strings.TrimSpace(c)
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
 }

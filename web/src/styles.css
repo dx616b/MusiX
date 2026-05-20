@@ -28,6 +28,30 @@ a { color: var(--accent); }
   flex: 1; padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface); color: var(--text);
 }
+.search-toggle {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text); font-size: 0.9rem; white-space: nowrap;
+}
+.search-toggle input { margin: 0; }
+.filters-panel { margin-bottom: 1rem; }
+.filters-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+.filters-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
+.filters-grid label {
+  display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem;
+}
+.filters-grid input,
+.filters-grid select {
+  padding: 0.5rem 0.6rem; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text);
+}
+.filters-summary { margin: 0.65rem 0 0; font-size: 0.85rem; }
 button {
   padding: 0.55rem 0.9rem; border-radius: 8px; border: none;
   background: var(--accent); color: #fff; font-weight: 600; cursor: pointer;
