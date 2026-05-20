@@ -10,3 +10,6 @@ config/config.docker.yaml
 .env
 .DS_Store
 node_modules/
+
+# Local-only drafts (not for the repo)
+docs/reddit-*.md
