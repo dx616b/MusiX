@@ -1,13 +1,4 @@
-# Preview stack — separate from prod (different port, DB, config).
-#
-#   cp docker-compose.preview.yml.example docker-compose.preview.yml
-#   cp config/config.docker.yaml.example config/config.preview.yaml
-#   # edit config.preview.yaml (optional: point at test indexers)
-#   docker compose -f docker-compose.preview.yml up -d
-#
-# Images (preview only — do not use on prod):
-#   dx616b/musix:edge              — latest green main
-#   dx616b/musix:sha-<7-char-git>  — immutable commit build (optional)
+# Optional second instance (port 8081, separate data). See docs/RELEASING.md.
 services:
   musix-preview:
     image: dx616b/musix:edge
