@@ -221,6 +221,36 @@ export function torrentStreamUrl(opts: {
   return `/api/torrent/stream?${torrentQueryParams(opts)}`
 }
 
+/** Drop in-memory swarm state for a torrent (call when closing preview UI). */
+export function releaseTorrentSession(infoHash: string) {
+  const ih = infoHash.trim().toLowerCase()
+  if (!ih) return Promise.resolve()
+  return httpDelete(`/api/torrent/session?infoHash=${encodeURIComponent(ih)}`) as Promise<{
+    released: boolean
+    infoHash: string
+  }>
+}
+
+export function releaseTorrentSessions(infoHashes: string[]) {
+  const list = infoHashes.map((h) => h.trim().toLowerCase()).filter(Boolean)
+  if (!list.length) return Promise.resolve({ released: 0, infoHashes: [] })
+  return post<{ released: number; infoHashes: string[] }>('/api/torrent/sessions/release', {
+    infoHashes: list,
+  })
+}
+
+export function infoHashFromStreamUrl(src: string): string | undefined {
+  const raw = src.trim()
+  if (!raw) return undefined
+  try {
+    const u = raw.startsWith('http') ? new URL(raw) : new URL(raw, window.location.origin)
+    const ih = u.searchParams.get('infoHash')?.trim().toLowerCase()
+    return ih || undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function previewTorrent(opts: {
   magnet?: string
   infoHash?: string

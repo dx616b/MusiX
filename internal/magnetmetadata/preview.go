@@ -124,7 +124,6 @@ func PreviewMagnet(ctx context.Context, magnetURI string) (*Preview, error) {
 	if err != nil {
 		return nil, err
 	}
-	touchSession(ih)
 
 	info := t.Info()
 	allFiles := t.Files()
