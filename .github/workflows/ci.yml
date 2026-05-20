@@ -39,7 +39,7 @@ jobs:
             docker:
               - 'Dockerfile'
               - '.dockerignore'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
               - '.hadolint.yaml'
 
   go:

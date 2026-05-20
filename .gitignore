@@ -7,6 +7,7 @@
 *.local.yaml
 config/config.yaml
 config/config.docker.yaml
+config/config.preview.yaml
 .env
 .DS_Store
 node_modules/

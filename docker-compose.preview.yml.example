@@ -1,0 +1,27 @@
+# Preview / nightly stack — separate from prod (different port, DB, config).
+#
+#   cp docker-compose.preview.yml.example docker-compose.preview.yml
+#   cp config/config.docker.yaml.example config/config.preview.yaml
+#   # edit config.preview.yaml (optional: point at test indexers)
+#   docker compose -f docker-compose.preview.yml up -d
+#
+# Image: dx616b/musix:nightly (daily) or :edge (every main merge)
+services:
+  musix-preview:
+    image: dx616b/musix:nightly
+    ports:
+      - "8081:8080"
+    environment:
+      CONFIG_FILE: /app/config/config.yaml
+      MUSIX_SQLITE: /app/data/musicx.db
+      PROWLARR_API_KEY: ${PROWLARR_API_KEY:-}
+      JACKETT_API_KEY: ${JACKETT_API_KEY:-}
+      TRANSMISSION_USER: ${TRANSMISSION_USER:-}
+      TRANSMISSION_PASS: ${TRANSMISSION_PASS:-}
+    volumes:
+      - ./config/config.preview.yaml:/app/config/config.yaml:ro
+      - musicx-preview-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  musicx-preview-data:
