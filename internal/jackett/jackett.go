@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	log "github.com/dx616b/musicx/internal/log"
 	"github.com/dx616b/musicx/internal/prowlarr"
 	"github.com/dx616b/musicx/internal/tracing"
+	"github.com/go-resty/resty/v2"
 )
 
 func truncateForLog(s string, maxLen int) string {
@@ -174,8 +174,7 @@ func inferIndexerNameFromURL(raw string) string {
 	if host == "" {
 		return ""
 	}
-	host = strings.TrimPrefix(host, "www.")
-	return host
+	return strings.TrimPrefix(host, "www.")
 }
 
 func (ctx *torznabItemContext) reset() {
@@ -228,10 +227,8 @@ func (ctx *torznabItemContext) toTorrent() *prowlarr.Torrent {
 
 	imdb, _ := normalizeImdbToUint(ctx.AttrByName["imdb"])
 
+	// Prefer Jackett indexer / site labels over torrent "tracker" (often announce or proxy hostname).
 	indexerName := strings.TrimSpace(ctx.AttrByName["jackettindexer"])
-	if indexerName == "" {
-		indexerName = strings.TrimSpace(ctx.AttrByName["tracker"])
-	}
 	if indexerName == "" {
 		indexerName = strings.TrimSpace(ctx.AttrByName["indexer"])
 	}
@@ -239,7 +236,9 @@ func (ctx *torznabItemContext) toTorrent() *prowlarr.Torrent {
 		indexerName = strings.TrimSpace(ctx.AttrByName["source"])
 	}
 	if indexerName == "" {
-		// Best-effort fallback for Torznab rows that omit indexer attrs.
+		indexerName = strings.TrimSpace(ctx.AttrByName["tracker"])
+	}
+	if indexerName == "" {
 		indexerName = inferIndexerNameFromURL(link)
 	}
 	if indexerName == "" {
@@ -472,6 +471,8 @@ func (j *Jackett) searchTorznab(ctx context.Context, q, function string, categor
 	}
 
 	log.Infof("Jackett: Torznab search end - function=%s returned=%d torrents", function, len(torrents))
+	j.ensureIndexerNameMap(ctx)
+	j.applyIndexerNameMapToTorrents(torrents)
 	return torrents, nil
 }
 
@@ -508,6 +509,11 @@ func (j *Jackett) SearchTorrentsAllIndexers(ctx context.Context, q string, music
 	if musicOnly {
 		return j.SearchMusicTorrentsAllIndexers(ctx, q)
 	}
+	ts, err := j.manualSearchJSON(ctx, q, "search")
+	if err == nil {
+		return ts, nil
+	}
+	log.Warnf("Jackett: manual JSON search failed, falling back to Torznab: %v", err)
 	return j.searchTorznab(ctx, q, "search", nil)
 }
 

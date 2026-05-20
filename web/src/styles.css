@@ -97,7 +97,13 @@ code { background: var(--bg); padding: 0.1em 0.35em; border-radius: 4px; }
   font-weight: 600; cursor: pointer;
 }
 .query-link { font-size: 1rem; text-align: left; }
-.history-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.history-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+.btn-link.danger {
+  color: var(--error);
+  border-color: var(--border);
+}
+.btn-link.danger:hover:not(:disabled) { border-color: var(--error); }
+.text-btn.danger { color: var(--error); }
 .cache-hint { margin: 0.5rem 0 1rem; }
 .cached-results { margin-top: 1.5rem; }
 .cached-results-header {

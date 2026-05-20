@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import TorrentPreviewPanel from '../components/TorrentPreviewPanel'
 import {
+  clearAllStoredSearches,
+  deleteStoredSearch,
   formatBytes,
   getStoredSearch,
   listSearches,
@@ -24,6 +26,8 @@ export default function SearchesPage() {
   const [loading, setLoading] = useState<string | null>(null)
   const [queueing, setQueueing] = useState<string | null>(null)
   const [preview, setPreview] = useState<SearchResult | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
+  const [clearing, setClearing] = useState(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -49,6 +53,35 @@ export default function SearchesPage() {
       setError(err instanceof Error ? err.message : 'Failed to load saved results')
     } finally {
       setLoading(null)
+    }
+  }
+
+  async function removeOne(query: string) {
+    setRemoving(query)
+    setError(null)
+    try {
+      await deleteStoredSearch(query)
+      if (selected?.query === query) setSelected(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove search')
+    } finally {
+      setRemoving(null)
+    }
+  }
+
+  async function clearAll() {
+    if (!window.confirm('Remove all saved searches and cached results?')) return
+    setClearing(true)
+    setError(null)
+    try {
+      await clearAllStoredSearches()
+      setSelected(null)
+      await refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clear history')
+    } finally {
+      setClearing(false)
     }
   }
 
@@ -80,6 +113,18 @@ export default function SearchesPage() {
     <div className="page">
       <h1>Search history</h1>
       <p className="muted">Saved queries and results. Download directly or run a fresh search.</p>
+      {rows.length > 0 && (
+        <p>
+          <button
+            type="button"
+            className="btn-link danger"
+            disabled={clearing}
+            onClick={() => void clearAll()}
+          >
+            {clearing ? 'Clearing…' : 'Clear all'}
+          </button>
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
       <ul className="list">
         {rows.map((s) => (
@@ -104,6 +149,14 @@ export default function SearchesPage() {
               <Link className="btn-link" to={`/?q=${encodeURIComponent(s.query)}`}>
                 Search fresh
               </Link>
+              <button
+                type="button"
+                className="text-btn danger"
+                disabled={removing === s.query}
+                onClick={() => void removeOne(s.query)}
+              >
+                {removing === s.query ? 'Removing…' : 'Remove'}
+              </button>
             </div>
           </li>
         ))}
@@ -120,6 +173,14 @@ export default function SearchesPage() {
             <Link className="btn-link" to={`/?q=${encodeURIComponent(selected.query)}`}>
               Search fresh
             </Link>
+            <button
+              type="button"
+              className="text-btn danger"
+              disabled={removing === selected.query}
+              onClick={() => void removeOne(selected.query)}
+            >
+              {removing === selected.query ? 'Removing…' : 'Remove from history'}
+            </button>
           </div>
           <ul className="list">
             {(selected.results ?? []).map((r) => (
